@@ -2,7 +2,6 @@
 // TODO (w porzadku waznosci):
 // LATER:
 //	- cos chyba nie tak z AOGONEK
-//	- opcja do ustawiania distance (raczej suwak niz liczba)
 //	- nie ma odswiezenia outputView po zmianie kolorow (jakos to sie pieprzy)
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
@@ -40,6 +39,7 @@ const uint32 MENU_COLOR3 =			'MCo3';
 const uint32 MENU_CLIP =			'MCli';
 const uint32 MENU_FOCUS =			'MFoc';
 const uint32 MENU_ABOUT =			'MAbo';
+const uint32 MENU_DISTANCE =		'MDis';
 
 BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	BRect(64, 64, 585, 480), windowTitle, B_TITLED_WINDOW, B_OUTLINE_RESIZE ) {
@@ -108,6 +108,8 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	menu->AddSeparatorItem();
 	menu->AddItem(menuClip = new BMenuItem("Śledzenie schowka", new BMessage(MENU_CLIP), 'L'));
 	menu->AddItem(menuFocus = new BMenuItem("Wyskakujące okno", new BMessage(MENU_FOCUS), 'F'));
+	menu->AddSeparatorItem();
+	menu->AddItem(new BMenuItem("Stopień rozmycia", new BMessage(MENU_DISTANCE)));
 	menubar->AddItem(menu);
 
 	config = new bydpConfig();
@@ -181,6 +183,13 @@ void BYdpMainWindow::ConfigColour(int number) {
 	myDialog = new bydpConfigure("Ustawienie kolorów", this);
 	myDialog->SetConfig(config);
 	myDialog->SetupColourDialog(number);
+	myDialog->Show();
+}
+
+void BYdpMainWindow::ConfigDistance(void) {
+	myDialog = new bydpConfigure("Stopień rozmycia wyszukiwania", this);
+	myDialog->SetConfig(config);
+	myDialog->SetupDistanceDialog();
 	myDialog->Show();
 }
 
@@ -307,6 +316,9 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 				"\n\nna podstawie kydpdict\n"
 				"\n\nProgram na licencji GNU/GPL"
 				"\n\nodwiedź:\nhttp://home.elysium.pl/ytm/html/beos.html");
+			break;
+		case MENU_DISTANCE:
+			ConfigDistance();
 			break;
 		case B_CLIPBOARD_CHANGED:
 			NewClipData();
