@@ -44,6 +44,7 @@
 			int FuzzyFindWord(const char *word);
 		    int min3(const int a, const int b, const int c);
 		    int editDistance(const char*slowo1, const char*slowo2);
+		    char tolower(const char c);
 		    char *ConvertToUtf(BString line);
 		    char *ConvertFromUtf(const char *input);
 
@@ -85,7 +86,7 @@
 		".", ".", ".", "ś", ".", ".", "ź", ".", \
 		"Ą", ".", "Ł", "¤", "Ľ", "Ś", "§", "¨", \
 		"Š", "Ş", "Ť", "Ź", "­", "Ž", "Ż", "°", \
-		"ą", ".", "ł", "´", "ľ", "ś", ".", "¸", \
+		".", ".", "ł", "´", "ľ", "ś", ".", "¸", \
 		"ą", "ş", "ť", "ź", ".", "ž", "ż", "Ŕ", \
 		"Á", "Â", "Ă", "Ä", "Ľ", "Ć", "Ç", "Č", \
 		"É", "Ę", "Ë", "Ĕ", "Í", "Î", "Ď", "Ð", \

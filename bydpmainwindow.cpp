@@ -1,8 +1,5 @@
 //
 // TODO (w porzadku waznosci):
-//	- sprawdzic kodowanie litery ą
-//	- wyszukiwanie powinno ignorować duże/małe litery!
-//		- wlasne tolower dla cp1250
 //	- geometria jakos sensowniej (jest niezle, refinement, po prawej stronie i line)
 //	- usunac printfy przed release
 //	- usunac zakomentowane rzeczy (jednorazowa operacja, zeby trafilo do cvs)
@@ -17,6 +14,7 @@
 //	- ze wybiera sie katalog w sciezce
 //	- po co sa ktore opcje
 //	- ze CTRL+SHIFT+ESC czysci input
+//	- fuzzysearch nie jest case insensitive - trwa za dlugo
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>

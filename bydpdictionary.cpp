@@ -1,7 +1,6 @@
 
 #include "bydpdictionary.h"
-// for tolower
-#include <ctype.h>
+
 #include <stdio.h>
 #include <string.h>
 
@@ -212,7 +211,6 @@ void ydpDictionary::ParseRTF(void) {
 //
 // wstawia na koniec tekst z odpowiednimi parametrami
 // (parametr newattr jest zbedny, liczy sie tylko oldattr)
-// XXX make configurable colours
 void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 //	printf("adding line, oldattr %i, newattr %i, line:%s:\n",oldattr,newattr,line.String());
 	if (line.Length() == 0)
@@ -281,6 +279,16 @@ char* ydpDictionary::ParseToken(char *def) {
 //
 
 const char *utf8_table[] = TABLE_UTF8;
+const char upper_cp[] = "A•BC∆DE FGHIJKL£MN—O”PQRSåTUVWXYZØè";
+const char lower_cp[] = "aπbcÊdeÍfghijkl≥mnÒoÛpqrsútuvwxyzøü";
+
+char ydpDictionary::tolower(const char c) {
+    unsigned int i;
+    for (i=0;i<sizeof(upper_cp);i++)
+	if (c == upper_cp[i])
+	    return lower_cp[i];
+    return c;
+}
 
 char *ydpDictionary::ConvertToUtf(BString line) {
 	static char buf[1024];
