@@ -53,7 +53,8 @@ void bydpConfig::readRGB(const char *buf, const char *token, rgb_color *result) 
 
 void bydpConfig::readBoolean(const char *buf, const char *token, bool *result) {
 	char *res = readString(buf,token);
-	*result = (!strcmp(res,"true"));
+	if (res != NULL)
+		*result = (!strcmp(res,"true"));
 }
 
 void bydpConfig::load(void) {
@@ -72,6 +73,7 @@ void bydpConfig::load(void) {
 	if (result!=NULL) topPath = result;
 	readBoolean(buf,"toPolish=",&toPolish);
 	readBoolean(buf,"clipboardTracking=",&clipboardTracking);
+	readBoolean(buf,"setFocusOnSelf=",&setFocusOnSelf);
 	readInt(buf,"distance=",&distance);
 	readInt(buf,"searchmode=",&searchmode);
 	readInt(buf,"todisplay=",&todisplay);
@@ -129,6 +131,7 @@ void bydpConfig::save(void) {
 	writeString("topPath",topPath);
 	writeBoolean("toPolish",toPolish);
 	writeBoolean("clipboardTracking",clipboardTracking);
+	writeBoolean("setFocusOnSelf",setFocusOnSelf);
 	writeInt("distance",distance);
 	writeInt("searchmode",searchmode);
 	writeInt("todisplay",todisplay);
@@ -145,10 +148,11 @@ void bydpConfig::setDefaultConfiguration(void) {
 	topPath = "/boot/home/Desktop/beos/";
 	toPolish = true;
 	clipboardTracking = true;
+	setFocusOnSelf = true;
 	searchmode = SEARCH_BEGINS;
 //	searchmode = SEARCH_FUZZY;
 	distance = 3;
-	todisplay = 20;
+	todisplay = 23;
 
 	colour.red = colour.green = colour.blue = 0;
 	colour0.red = colour0.green = 0;

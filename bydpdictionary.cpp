@@ -37,7 +37,6 @@ void ydpDictionary::GetDefinition(int index) {
 		outputView->SetText("Proszę skonfigurować ścieżkę dostępu do plików słownika.\n");
 		return;
 	}
-	static int lastIndex = -1;
 	if (index < 0)
 		index = lastIndex;
 	if (index == lastIndex)
@@ -75,6 +74,7 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 		dictCache[i].words = words;
 	}
 	lastresult = -1;
+	lastIndex = -1;
 	dictionaryReady = true;
 	return 0;
 }
@@ -360,11 +360,11 @@ int ydpDictionary::FindWord(const char *wordin)
 			lastresult = result;
 			ClearWordList();
 			j = 0;
-			i = result;	if (i<0) i=0;
-//			i = result-todisplay; if (i<0) i=0;
-			for (;(i<wordCount) && (i<result+cnf->todisplay);i++, j++) {
+			i = result-(cnf->todisplay/2-1); if (i<0) i=0;
+			for (;(i<wordCount) && (j<cnf->todisplay);i++) {
 				dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
 				wordPairs[j]=i;
+				j++;
 			}
 			return result;
 			break;
@@ -378,21 +378,21 @@ int ydpDictionary::BeginsFindWord(const char *wordin)
 	int i;
 
 	for (i=0; i<wordCount; i++)
-//		if (!strncasecmp(words[x], lower_pl(word), strlen(word)))
 		if (!strncmp(words[i], word, len))
 			return i;
 	return -1;
 }
 
-void ydpDictionary::FullFillList(void) {
-	int i;
-	for (i=0;i<wordCount;i++) {
-		if ((i % 500)==0)
-			printf("adding %i\n",i);
-		dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
-		wordPairs[i]=i;
-	}
-}
+/// XXX this is probably unused
+//void ydpDictionary::FullFillList(void) {
+//	int i;
+//	for (i=0;i<wordCount;i++) {
+//		if ((i % 500)==0)
+//			printf("adding %i\n",i);
+//		dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
+//		wordPairs[i]=i;
+//	}
+//}
 
 void ydpDictionary::ClearWordList(void) {
 	int i;

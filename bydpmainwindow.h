@@ -22,13 +22,13 @@
 			virtual void MessageReceived(BMessage *Message);
 			virtual bool QuitRequested();
 			virtual void RefsReceived(BMessage *Message);
-			void ConfigUpdate(void);
+//			void ConfigUpdate(void);
 		private:
 			void NewClipData(void);
 			void HandleModifiedInput(bool force);
 			void UpdateMenus(void);
 			void UpdateLanguages(bool newlang);
-			void ConfigDialog(void);
+//			void ConfigDialog(void);
 			void ConfigPath(void);
 			void ConfigColour(int number);
 			void TryToOpenDict(void);
@@ -36,6 +36,7 @@
 			BTextControl *wordInput;
 			BListView *dictList;
 			BMenuItem *menuFuzzy, *menuPlain, *menuEng, *menuPol, *menuClip;
+			BMenuItem *menuFocus;
 
 			ydpDictionary *myDict;
 			bydpConfig *config;

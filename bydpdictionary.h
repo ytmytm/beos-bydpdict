@@ -41,7 +41,7 @@
 			void UpdateAttr(int oldattr, int newattr);
 			char *ParseToken(char *def);
 			void ClearWordList(void);
-			void FullFillList(void);
+//			void FullFillList(void);
 			int BeginsFindWord(const char *word);
 			int FuzzyFindWord(const char *word);
 		    int min3(const int a, const int b, const int c);
@@ -69,7 +69,7 @@
 				char **words;
 				unsigned long *indexes;
 			} dictCache[2];
-			int lastresult;
+			int lastresult, lastIndex;
 			bool dictionaryReady;
 
 			// parser variables

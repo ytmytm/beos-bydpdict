@@ -21,6 +21,7 @@
 			BString dataFName;
 			bool toPolish;
 			bool clipboardTracking;
+			bool setFocusOnSelf;
 			int distance;	// for fuzzy search
 			int searchmode;
 			int todisplay;	// how many show on list with plain search

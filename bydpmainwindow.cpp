@@ -1,14 +1,20 @@
 //
-// TODO:
-// - menu:
-//	- wyszukiwanie (po clipie) - to nie jest pelne beginswitch
-//	- dialog do wyboru kolorow
+// TODO (w porzadku waznosci):
+//	- wyszukiwanie (po clipie) - to nie jest pelne beginswith
+//		- to beginswith z bydpdictionary nadaje sie tylko do naiwnego
+//		  szukania przy wpisywaniu po literce
+//		- zaimportowac smartscoresearch z kydpdict?
 //	- cos do szybkiego czyszczenia inputboksa (button/ESC?)
-//		- KeyDown nie bardzo jadzie
+//		- KeyDown nie bardzo jadzie, cos z shortcuts z bwindow
+//	- todisplay obliczane z wielkosci widgeta vs wielkosci fontu
+//		- trzeba przechwytywac info o resize!
 //	- geometria jakos sensowniej (jest niezle, refinement)
-//	- todisplay obliczane jakos samodzielnie?
+// LATER:
+//	- nie ma odswiezenia outputView po zmianie kolorow (jakos to sie pieprzy)
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
+//	- lista wyrazow przy nie-fuzzy zachowuje sie nieintuicyjnie, na razie
+//	  musi wystarczyc, w przyszlosci pewnie lepiej byloby sportowac kydpdict
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>
@@ -25,7 +31,7 @@ const uint32 MSG_LIST_INVOKED =		'LInv'; // dwuklik na liscie
 const uint32 MENU_SWITCH =			'MSwi';
 const uint32 MENU_ENG2POL =			'ME2P';
 const uint32 MENU_POL2ENG =			'MP2E';
-const uint32 MENU_SETTINGS =		'MSet';
+//const uint32 MENU_SETTINGS =		'MSet';
 const uint32 MENU_FUZZY =			'MFuz';
 const uint32 MENU_PLAIN =			'MPla';
 const uint32 MENU_PATH =			'MPat';
@@ -34,6 +40,7 @@ const uint32 MENU_COLOR1 =			'MCo1';
 const uint32 MENU_COLOR2 =			'MCo2';
 const uint32 MENU_COLOR3 =			'MCo3';
 const uint32 MENU_CLIP =			'MCli';
+const uint32 MENU_FOCUS =			'MFoc';
 
 BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	BRect(64, 64, 600, 480), windowTitle, B_TITLED_WINDOW, 0 ) {
@@ -93,12 +100,13 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	menu = new BMenu("Ustawienia");
 	menu->AddItem(new BMenuItem("Ścieżka do słownika", new BMessage(MENU_PATH), 'S'));
 	menu->AddSeparatorItem();
-	menu->AddItem(new BMenuItem("Kolor0", new BMessage(MENU_COLOR0)));
-	menu->AddItem(new BMenuItem("Kolor1", new BMessage(MENU_COLOR1)));
-	menu->AddItem(new BMenuItem("Kolor2", new BMessage(MENU_COLOR2)));
-	menu->AddItem(new BMenuItem("Kolor3", new BMessage(MENU_COLOR3)));
+	menu->AddItem(new BMenuItem("Kolor zwykłego tekstu", new BMessage(MENU_COLOR0)));
+	menu->AddItem(new BMenuItem("Kolor przykładów", new BMessage(MENU_COLOR1)));
+	menu->AddItem(new BMenuItem("Kolor tłumaczenia", new BMessage(MENU_COLOR2)));
+	menu->AddItem(new BMenuItem("Kolor kwalifikatorów", new BMessage(MENU_COLOR3)));
 	menu->AddSeparatorItem();
 	menu->AddItem(menuClip = new BMenuItem("Śledzenie schowka", new BMessage(MENU_CLIP), 'L'));
+	menu->AddItem(menuFocus = new BMenuItem("Wyskakujące okno", new BMessage(MENU_FOCUS), 'F'));
 	menubar->AddItem(menu);
 
 	config = new bydpConfig();
@@ -130,6 +138,8 @@ void BYdpMainWindow::NewClipData(void) {
 		be_clipboard->Unlock();
 		result.SetTo(text,textLen);
 		wordInput->SetText(result.String());
+		if (config->setFocusOnSelf)
+			this->Activate();
 		printf("got:%s:clip\n",result.String());
 	}
 }
@@ -151,6 +161,8 @@ void BYdpMainWindow::UpdateMenus(void) {
 	menuEng->SetMarked(config->toPolish);
 	menuPol->SetMarked(!config->toPolish);
 	menuClip->SetMarked(config->clipboardTracking);
+	menuFocus->SetMarked(config->setFocusOnSelf);
+	menuFocus->SetEnabled(config->clipboardTracking);
 }
 
 void BYdpMainWindow::UpdateLanguages(bool newlang) {
@@ -162,17 +174,26 @@ void BYdpMainWindow::UpdateLanguages(bool newlang) {
 	HandleModifiedInput(true);
 }
 
-void BYdpMainWindow::ConfigDialog(void) {
-	myDialog = new bydpConfigure("Ustawienia", this);
-	myDialog->Show();
-}
+/// unused
+///void BYdpMainWindow::ConfigDialog(void) {
+///	myDialog = new bydpConfigure("Ustawienia", this);
+///	myDialog->Show();
+///}
 
-void BYdpMainWindow::ConfigUpdate(void) {
-	printf("update config\n");
-}
+/// XXX callback from ydpConfigure, but dumps core...
+//void BYdpMainWindow::ConfigUpdate(void) {
+//	printf("update config - redraw stuff\n");
+//	myDict->ReGetDefinition();
+//	HandleModifiedInput(true);
+//	outputView->Invalidate();
+//}
 
 void BYdpMainWindow::ConfigColour(int number) {
 	printf("configure colour %i\n", number);
+	myDialog = new bydpConfigure("Ustawienie kolorów", this);
+	myDialog->SetConfig(config);
+	myDialog->SetupColourDialog(number);
+	myDialog->Show();
 }
 
 void BYdpMainWindow::TryToOpenDict(void) {
@@ -282,6 +303,10 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			config->save();
 			UpdateMenus();
 			break;
+		case MENU_FOCUS:
+			config->setFocusOnSelf = !config->setFocusOnSelf;
+			config->save();
+			UpdateMenus();
 		case B_CLIPBOARD_CHANGED:
 			NewClipData();
 			break;

@@ -4,6 +4,8 @@
 
 	#include <View.h>
 	#include <Window.h>
+	#include <ColorControl.h>
+	#include "bydpconfig.h"
 
 	class bydpConfigure : public BWindow {
 		public:
@@ -11,11 +13,19 @@
 			~bydpConfigure();
 			virtual void MessageReceived(BMessage *msg);
 			virtual bool QuitRequested();
+			void SetConfig(bydpConfig *config);
+			void SetupColourDialog(int colour);
 		private:
+			void ConfigUpdate(void);
+			void CopyNewColours(rgb_color *to);
+			void UpdateExampleColour();
 			void *parent;
-			bool valid;	// only valid after pressing OK
-	};
+			bydpConfig *myConfig;
+			int myColour;
 
-	const uint32 CONF_BUTTON = 'CBut';
+			BColorControl *myCColor;
+			BStringView *exampleText;
+			BView *mainView;
+	};
 
 #endif
