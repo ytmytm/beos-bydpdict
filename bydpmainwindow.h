@@ -9,6 +9,7 @@
 	#include <TextView.h>
 	#include <ListView.h>
 	#include "globals.h"
+	#include "bydpconfig.h"
 	#include "bydpdictionary.h"
 
 	class BYdpMainWindow : public BWindow {
@@ -24,6 +25,7 @@
 			BListView *dictList;
 
 			ydpDictionary *myDict;
+			bydpConfig *config;
 	};
 
 #endif

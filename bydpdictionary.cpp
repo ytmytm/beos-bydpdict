@@ -1,12 +1,11 @@
 
 #include "bydpdictionary.h"
 
-ydpDictionary::ydpDictionary(BTextView *output, BListView *dict) {
+ydpDictionary::ydpDictionary(BTextView *output, BListView *dict, bydpConfig *config) {
 	outputView = output;
 	dictList = dict;
+	cnf = config;
 	lastIndex = -1;
-	searchmode = SEARCH_FUZZY;
-	distance = 3;
 }
 
 ydpDictionary::~ydpDictionary() {
@@ -16,6 +15,8 @@ ydpDictionary::~ydpDictionary() {
 void ydpDictionary::GetDefinition(int index) {
 	if (index == lastIndex)
 		return;
+	if (index < 0)
+		index = lastIndex;
 	lastIndex = index;
 	if (ReadDefinition(index) == 0) {
 		ParseRTF();
@@ -36,6 +37,18 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 	}
 	FillWordList();
 	return 0;
+}
+
+int ydpDictionary::OpenDictionary(void) {
+	BString idx, dat;
+
+	idx = cnf->topPath;
+	idx.Append("/");
+	idx += cnf->indexFName;
+	dat = cnf->topPath;
+	dat.Append("/");
+	dat += cnf->dataFName;
+	return OpenDictionary(idx.String(),dat.String());
 }
 
 void ydpDictionary::CloseDictionary(void) {
@@ -59,7 +72,6 @@ unsigned short fix16(unsigned short x) {
 
 void ydpDictionary::FillWordList(void) {
 
-//	printf("in fill word list\n");
 	unsigned long pos;
 	unsigned long index[2];
 	unsigned short wcount;
@@ -167,10 +179,9 @@ void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 	if (line.Length() == 0)
 		return;
 	newattr = oldattr;
-	rgb_color colour;
+	rgb_color *colour;
 	BFont myfont(be_plain_font);
-	colour.red = colour.green = colour.blue = 0;
-
+	colour = &cnf->colour;
 	if (newattr & A_SUPER) {
 		myfont.SetSize(10.0);
 	}
@@ -181,18 +192,15 @@ void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 		myfont.SetFace(B_ITALIC_FACE);
 	}
 	if (newattr & A_COLOR0) {
-		colour.red = colour.green = 0;
-		colour.blue = 255;
+		colour = &cnf->colour0;
 	}
 	if (newattr & A_COLOR1) {
-		colour.red = 255;
-		colour.green = colour.blue = 0;
+		colour = &cnf->colour1;
 	}
 	if (newattr & A_COLOR2) {
-		colour.green = 255;
-		colour.red = colour.blue = 0;
+		colour = &cnf->colour2;
 	}
-	outputView->SetFontAndColor(&myfont,B_FONT_ALL,&colour);
+	outputView->SetFontAndColor(&myfont,B_FONT_ALL,colour);
 	line = ConvertToUtf(line);
 	outputView->Insert(textlen,line.String(),line.Length());
 	textlen+=line.Length();
@@ -298,21 +306,24 @@ char *ydpDictionary::ConvertFromUtf(const char *input) {
 
 int ydpDictionary::FindWord(const char *wordin)
 {
-	static int lastmode=-1;
+	int result,i,j;
 
-	if (searchmode != lastmode) {
-		lastmode = searchmode;
-		if (searchmode == SEARCH_BEGINS) {
-			// wyczysc liste i wypelnij calkowicie
-		}
-	}
-	switch (searchmode) {
+	switch (cnf->searchmode) {
 		case SEARCH_FUZZY:
 			return FuzzyFindWord(wordin);
 			break;
 		case SEARCH_BEGINS:
 		default:
-			return FuzzyFindWord(wordin);
+			result = BeginsFindWord(wordin);
+			ClearWordList();
+			j = 0;
+			i = result;
+//			i = result-todisplay; if (i<0) i=0;
+			for (;(i<wordCount) && (i<result+cnf->todisplay);i++, j++) {
+				dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
+				wordPairs[j]=i;
+			}
+			return result;
 			break;
 	}
 }
@@ -320,6 +331,31 @@ int ydpDictionary::FindWord(const char *wordin)
 int ydpDictionary::BeginsFindWord(const char *wordin)
 {
 	char *word = ConvertFromUtf(wordin);
+	int i;
+
+	for (i=0; i<wordCount; i++)
+//		if (!strncasecmp(words[x], lower_pl(word), strlen(word)))
+		if (!strncmp(words[i], word, strlen(word)))
+			return i;
+	return -1;
+}
+
+void ydpDictionary::FullFillList(void) {
+	int i;
+	for (i=0;i<wordCount;i++) {
+		if ((i % 500)==0)
+			printf("adding %i\n",i);
+		dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
+		wordPairs[i]=i;
+	}
+}
+
+void ydpDictionary::ClearWordList(void) {
+	int i;
+	void *anItem;
+	for (i=0; (anItem=dictList->ItemAt(i)); i++)
+		delete anItem;
+	dictList->MakeEmpty();
 }
 
 int ydpDictionary::FuzzyFindWord(const char *wordin)
@@ -329,21 +365,17 @@ int ydpDictionary::FuzzyFindWord(const char *wordin)
     if ((wordCount<0) || (words == NULL))
 		return -1;
 	if (strlen(wordin)==0)
-		return 0;
+		return -1;
 
 	char *word = ConvertFromUtf(wordin);
 
-	// wyczyszczenie listy
-	void *anItem;
-	for (i=0; (anItem=dictList->ItemAt(i)); i++)
-		delete anItem;
-	dictList->MakeEmpty();
+	ClearWordList();
 
     numFound = 0;
     best = 0;
-    hiscore = distance;
+    hiscore = cnf->distance;
     for (i=0;i<wordCount;i++)
-		if ((score=editDistance(word,words[i])) < distance) {
+		if ((score=editDistance(word,words[i])) < cnf->distance) {
 			dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
 			wordPairs[numFound] = i;
 			numFound++;

@@ -11,6 +11,8 @@
 #include <ListView.h>
 #include <Font.h>
 
+#include "bydpconfig.h"
+
 #define A_BOLD 1
 #define A_ITALIC 2
 #define A_COLOR0 4
@@ -19,16 +21,14 @@
 #define A_MARGIN 32
 #define A_SUPER 64
 
-#define SEARCH_BEGINS	1
-#define SEARCH_FUZZY	2
-
 	class ydpDictionary {
 		public:
-			ydpDictionary(BTextView *output, BListView *dict);
+			ydpDictionary(BTextView *output, BListView *dict, bydpConfig *config);
 			~ydpDictionary();
 
 			void GetDefinition(int index);
 			int OpenDictionary(const char *index, const char *data);
+			int OpenDictionary(void);
 			int FindWord(const char *word);
 			void CloseDictionary(void);
 
@@ -40,6 +40,8 @@
 			void ParseRTF(void);
 			void UpdateAttr(int oldattr, int newattr);
 			char *ParseToken(char *def);
+			void ClearWordList(void);
+			void FullFillList(void);
 			int BeginsFindWord(const char *word);
 			int FuzzyFindWord(const char *word);
 		    int min3(const int a, const int b, const int c);
@@ -52,9 +54,8 @@
 			BListView *dictList;
 			int lastIndex;
 
-			// these should go to config class
-			int distance;	// for fuzzy search
-			int searchmode;
+			// configuration holder
+			bydpConfig *cnf;
 
 			BFile fIndex, fData;
 			int wordCount;

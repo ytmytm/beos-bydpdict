@@ -1,21 +1,20 @@
 //
 // TODO:
-// - menu
-//		- konfiguracja
-//			- sciezki
-//			- kolory
-//			- podobienstwo
-//			- clipboard tracking
-//			- sposob wyszukiwania:full/fuzzy (jak bardzo fuzzy i ile znalezc)
-//		- zmiana kierunku tlumaczenia
+// - menu:
+//		- quit
+//		- switch language direction
+//		- config
+//			- sciezka
+//			- kolory (4)
+//			- search method
+//				- plain: ile do pokazania
+//				- fuzzy: podobienstwo
+//			- cliptracking
 //	- clipboard
-//	- wyszukiwanie
-//		- beginswith
-//			- liste wypelnic tylko raz? przy przelaczeniu typu szukania?
-//	- klasa config do trzymania konfiguracji
 //	- cos do szybkiego czyszczenia inputboksa (ESC?)
 //		- KeyDown nie bardzo jadzie
 //	- geometria jakos sensowniej (jest niezle, refinement)
+//	- todisplay obliczane jakos samodzielnie?
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
 
@@ -59,9 +58,10 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	dictList->SetInvocationMessage(new BMessage(MSG_LIST_INVOKED));
 	dictList->SetSelectionMessage(new BMessage(MSG_LIST_SELECTED));
 
-	myDict = new ydpDictionary(outputView, dictList);
+	config = new bydpConfig();
+	myDict = new ydpDictionary(outputView, dictList, config);
 	printf("about to open dictionary\n");
-	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict101.idx", "/boot/home/Desktop/beos/kydpdict/dict101.dat");
+	myDict->OpenDictionary();	// XXX test for error?
 	wordInput->SetText("A");
 	wordInput->MakeFocus(true);
 }
@@ -70,35 +70,39 @@ BYdpMainWindow::~BYdpMainWindow() {
 }
 
 void BYdpMainWindow::HandleModifiedInput(void) {
-	int item = myDict->FindWord(wordInput->Text());
-//	dictList->Select(0);	// will force selection message
+	static BString lastinput;
+	if (!strcmp(lastinput.String(),wordInput->Text())) {
+		return;
+	}
+	lastinput = wordInput->Text();
+	int item = myDict->FindWord(lastinput.String());
 	printf("new input\n");
 	myDict->GetDefinition(item);
 }
 
 void BYdpMainWindow::MessageReceived(BMessage *Message) {
 	int item;
+	this->DisableUpdates();
 	switch (Message->what) {
 		case MSG_MODIFIED_INPUT:
-			this->DisableUpdates();
 			HandleModifiedInput();
-			this->EnableUpdates();
+			break;
+		case MSG_LIST_INVOKED:
+			item = dictList->CurrentSelection(0);
+			wordInput->SetText(((BStringItem*)dictList->ItemAt(item))->Text());
 			break;
 		case MSG_LIST_SELECTED:
-		case MSG_LIST_INVOKED:
-			this->DisableUpdates();
 			item = dictList->CurrentSelection(0);
 			if (item>dictList->CountItems())
 				item = dictList->CountItems();
 			if (item>=0)
 				myDict->GetDefinition(myDict->wordPairs[item]);
-			printf("selected %i\n",item);
-			this->EnableUpdates();
 			break;
 		default:
 			BWindow::MessageReceived(Message);
 			break;
 	}
+	this->EnableUpdates();
 }
 
 bool BYdpMainWindow::QuitRequested() {
