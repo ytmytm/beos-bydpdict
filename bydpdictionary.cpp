@@ -1,5 +1,9 @@
 
 #include "bydpdictionary.h"
+// for tolower
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
 
 ydpDictionary::ydpDictionary(BTextView *output, BListView *dict, bydpConfig *config) {
 	int i;
@@ -371,16 +375,29 @@ int ydpDictionary::FindWord(const char *wordin)
 	}
 }
 
-int ydpDictionary::BeginsFindWord(const char *wordin)
-{
-	char *word = ConvertFromUtf(wordin);
-	int len = strlen(word);
-	int i;
+int ydpDictionary::ScoreWord(const char *w1, const char *w2) {
+	int i = 0;
+	int len1 = strlen(w1);
+	int len2 = strlen(w2);
+	for (; ((i<len1) && (i<len2)); i++)
+		if (tolower(w1[i])!=tolower(w2[i]))
+//		if (w1[i]!=w2[i])
+			break;
+	return i;
+}
 
-	for (i=0; i<wordCount; i++)
-		if (!strncmp(words[i], word, len))
-			return i;
-	return -1;
+int ydpDictionary::BeginsFindWord(const char *wordin) {
+	char *word = ConvertFromUtf(wordin);
+	int i, score, maxscore=0, maxitem=0;
+
+	for (i=0;i<wordCount;i++) {
+		score = ScoreWord(word, words[i]);
+		if (score>maxscore) {
+			maxscore = score;
+			maxitem = i;
+		}
+	}
+	return maxitem;
 }
 
 /// XXX this is probably unused

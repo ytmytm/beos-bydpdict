@@ -1,12 +1,11 @@
 //
 // TODO (w porzadku waznosci):
-//	- wyszukiwanie (po clipie) - to nie jest pelne beginswith
-//		- to beginswith z bydpdictionary nadaje sie tylko do naiwnego
-//		  szukania przy wpisywaniu po literce
-//		- problem tez po przelaczeniu jezykow
-//		- zaimportowac smartscoresearch z kydpdict?
+//	- sprawdzic kodowanie litery ą
+//	- wyszukiwanie powinno ignorować duże/małe litery!
+//		- wlasne tolower dla cp1250
 //	- geometria jakos sensowniej (jest niezle, refinement, po prawej stronie i line)
 //	- usunac printfy przed release
+//	- usunac zakomentowane rzeczy (jednorazowa operacja, zeby trafilo do cvs)
 // LATER:
 //	- opcja do ustawiania distance (raczej suwak niz liczba)
 //	- nie ma odswiezenia outputView po zmianie kolorow (jakos to sie pieprzy)

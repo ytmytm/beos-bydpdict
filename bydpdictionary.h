@@ -2,9 +2,6 @@
 #ifndef _BYDPDICTIONARY_H
 #define _BYDPDICTIONARY_H
 
-#include <stdio.h>
-#include <string.h>
-
 #include <String.h>
 #include <File.h>
 #include <TextView.h>
@@ -42,6 +39,7 @@
 			char *ParseToken(char *def);
 			void ClearWordList(void);
 //			void FullFillList(void);
+			int ScoreWord(const char *w1, const char *w2);
 			int BeginsFindWord(const char *word);
 			int FuzzyFindWord(const char *word);
 		    int min3(const int a, const int b, const int c);

@@ -1,6 +1,6 @@
 
 #include "bydpconfigure.h"
-#include "bydpmainwindow.h"
+//#include "bydpmainwindow.h"
 #include <stdio.h>
 
 #include <Button.h>
