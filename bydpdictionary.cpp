@@ -4,6 +4,7 @@
 ydpDictionary::ydpDictionary(BTextView *output, BListView *dict) {
 	outputView = output;
 	dictList = dict;
+	lastIndex = -1;
 }
 
 ydpDictionary::~ydpDictionary() {
@@ -11,6 +12,9 @@ ydpDictionary::~ydpDictionary() {
 }
 
 void ydpDictionary::GetDefinition(int index) {
+	if (index == lastIndex)
+		return;
+	lastIndex = index;
 	if (ReadDefinition(index) == 0) {
 		ParseRTF();
 	} else {
@@ -142,7 +146,10 @@ void ydpDictionary::ParseRTF(void) {
 		}
 		def++;
 		if (newline_) {
-			line+="\n";
+			if (newattr & A_MARGIN) {
+				line.Prepend("\t\t",2);
+			}
+			line.Append("\n",1);
 			UpdateAttr(attr,newattr);
 			newline_ = 0;
 		}
@@ -155,7 +162,7 @@ void ydpDictionary::ParseRTF(void) {
 //
 // wstawia na koniec tekst z odpowiednimi parametrami
 // (parametr newattr jest zbedny)
-//
+// XXX make configurable colours
 void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 	printf("adding line, oldattr %i, newattr %i, line:%s:\n",oldattr,newattr,line.String());
 	if (line.Length() == 0)
@@ -163,7 +170,6 @@ void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 	newattr = oldattr;
 	rgb_color colour;
 	BFont myfont(be_plain_font);
-//	myfont.SetEncoding(B_ISO_8859_2);
 	colour.red = colour.green = colour.blue = 0;
 
 	if (newattr & A_BOLD) {
@@ -223,35 +229,38 @@ char* ydpDictionary::ParseToken(char *def) {
 ////////////////
 // search stuff below
 
-int ydpDictionary::FindWord(const char *word)
+int ydpDictionary::FuzzyFindWord(const char *word)
 {
-	printf("searching for:%s\n", word);
-	int i;
+	int i, numFound, best, score, hiscore;
 
     if ((wordCount<0) || (words == NULL))
-		return 0;
+		return -1;
 
+	// wyczyszczenie listy
 	void *anItem;
-	printf("removing old data\n");
-	for (i=0; (anItem=dictList->ItemAt(i)); i++) {
-		printf("removing %i\n",i);
+	for (i=0; (anItem=dictList->ItemAt(i)); i++)
 		delete anItem;
-	}
 	dictList->MakeEmpty();
-    int distance = 3;
-    int cur = 0;
-    printf("searching for something\n");
+
+    int distance = 2;		// XXX configurable!
+    numFound = 0;
+    best = 0;
+    hiscore = distance;
     for (i=0;i<wordCount;i++)
 //	if (editDistance(codec->fromUnicode(wordEdit->text()),wordList[i]) < distance)
 //	    listBox->insertItem(codec->toUnicode(wordList[i]));
-		if (editDistance(word,words[i]) < distance) {
+		if ((score=editDistance(word,words[i])) < distance) {
 			dictList->AddItem(new BStringItem(words[i]));
-			wordPairs[cur] = i;
-			cur++;
-			if (cur>50)
-				return 0;
+			wordPairs[numFound] = i;
+			numFound++;
+			if (score<hiscore) {
+				best = i;
+				hiscore = score;
+			}
+//			if (numFound>50)		// XXX z glowy! potrzeba jesli distance >2
+//				return best;
 		}
-	return 2000;
+	return best;
 }
 
 int ydpDictionary::min3(const int a, const int b, const int c)

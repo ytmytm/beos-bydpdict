@@ -26,8 +26,10 @@
 
 			void GetDefinition(int index);
 			int OpenDictionary(const char *index, const char *data);
-			int FindWord(const char *word);
+			int FuzzyFindWord(const char *word);
 			void CloseDictionary(void);
+
+			int *wordPairs;		// # indeksow na liscie dictList
 
 		private:
 			int ReadDefinition(int index);
@@ -41,11 +43,11 @@
 			// GUI data holders
 			BTextView *outputView;
 			BListView *dictList;
+			int lastIndex;
 
 			BFile fIndex, fData;
 			int wordCount;
 			unsigned long *indexes;
-			int *wordPairs;
 			char **words;
 			BString curDefinition;
 

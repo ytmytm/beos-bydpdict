@@ -4,7 +4,7 @@
 
 BYdpApp::BYdpApp() : BApplication("application/x-vnd.generic-BYdpDict")
 {
-	myMainWindow = new BYdpMainWindow("Main Window");
+	myMainWindow = new BYdpMainWindow("BYDPDict");
 	if (myMainWindow != NULL) {
 		myMainWindow->Show();
 	} else {
