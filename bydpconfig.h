@@ -34,6 +34,11 @@
 			BString cfgname;
 			void updateFName(void);
 
+			void readRGB(const char *buf, const char *token, rgb_color *result);
+			void readBoolean(const char *buf, const char *token, bool *result);
+			void readInt(const char *buf, const char *token, int *result);
+			char *readString(const char *buf, const char *token);
+
 			void writeRGB(BString variable, rgb_color value);
 			void writeInt(BString variable, int value);
 			void writeString(BString variable, BString value);

@@ -1,6 +1,7 @@
 
 #include "bydpconfig.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 bydpConfig::bydpConfig() {
 	load();
@@ -10,18 +11,74 @@ bydpConfig::~bydpConfig() {
 
 }
 
+char *bydpConfig::readString(const char *buf, const char *token) {
+	static char buf2[256];
+	char *s, *t;
+	s = strstr(buf,token);
+	if (s!=NULL) {
+		memset(buf2,0,sizeof(buf2));
+		strncpy(buf2,&s[strlen(token)],sizeof(buf2)-1);
+		t = strchr(buf2,'\n');
+		if (t!=NULL)
+			*t = '\0';
+		return buf2;
+	} else {
+		return NULL;
+	}
+}
+
+void bydpConfig::readInt(const char *buf, const char *token, int *result) {
+	char *s = strstr(buf,token);
+	if (s!=NULL) {
+		*result = strtol(&s[strlen(token)],NULL,10);
+	}
+}
+
+void bydpConfig::readRGB(const char *buf, const char *token, rgb_color *result) {
+	BString tmp;
+	int res;
+	tmp = token;
+	tmp += ".red=";
+	readInt(buf,tmp.String(),&res);
+	result->red = res;
+	tmp = token;
+	tmp += ".green=";
+	readInt(buf,tmp.String(),&res);
+	result->green = res;
+	tmp = token;
+	tmp += ".blue=";
+	readInt(buf,tmp.String(),&res);
+	result->blue = res;
+}
+
+void bydpConfig::readBoolean(const char *buf, const char *token, bool *result) {
+	char *res = readString(buf,token);
+	*result = (!strcmp(res,"true"));
+}
+
 void bydpConfig::load(void) {
-	char buf[1024];
+	static char buf[1024];
+	char *result;
+
 	setDefaultConfiguration();
 	if (conf.SetTo(CONFIG_NAME,B_READ_ONLY) != B_OK) {
 		printf("error opening config file for load\n");
 		return;
 	}
-	conf.Read(buf,1024);
+	memset(buf,0,sizeof(buf));
+	conf.Read(buf,sizeof(buf)-1);
 	conf.Unset();
-	printf("read config:%s\n",buf);
-	// podzial na stringi przez #10
-	// parsowanie wynikow
+	result = readString(buf,"topPath=");
+	if (result!=NULL) topPath = result;
+	readBoolean(buf,"toPolish=",&toPolish);
+	readBoolean(buf,"clipboardTracking=",&clipboardTracking);
+	readInt(buf,"distance=",&distance);
+	readInt(buf,"searchmode=",&searchmode);
+	readInt(buf,"todisplay=",&todisplay);
+	readRGB(buf,"colour",&colour);
+	readRGB(buf,"colour0",&colour0);
+	readRGB(buf,"colour1",&colour1);
+	readRGB(buf,"colour2",&colour2);
 	updateFName();
 }
 
@@ -80,6 +137,7 @@ void bydpConfig::save(void) {
 	writeRGB("colour1",colour1);
 	writeRGB("colour2",colour2);
 	conf.Unset();
+	updateFName();	// don't remove this - needs to be up-to-date for langswitch
 }
 
 void bydpConfig::setDefaultConfiguration(void) {

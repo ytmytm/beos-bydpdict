@@ -1,16 +1,14 @@
 //
 // TODO:
-// - cos sie zepsulo z przelaczaniem jezykow? (chyba raczej default przeslania)
 // - menu:
-//		- parsowanie configa
-//	- clipboard
-//	- cos do szybkiego czyszczenia inputboksa (ESC?)
+//	- dialog do wyboru kolorow
+//	- jakas obsluga clipboard (o ile to mozliwe)
+//	- cos do szybkiego czyszczenia inputboksa (button/ESC?)
 //		- KeyDown nie bardzo jadzie
 //	- geometria jakos sensowniej (jest niezle, refinement)
 //	- todisplay obliczane jakos samodzielnie?
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
-//	- zapis/odczyt pliku konfiguracyjnego $HOME/config/.bydpdict
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>
