@@ -3,12 +3,9 @@
 //	- wyszukiwanie (po clipie) - to nie jest pelne beginswith
 //		- to beginswith z bydpdictionary nadaje sie tylko do naiwnego
 //		  szukania przy wpisywaniu po literce
+//		- problem tez po przelaczeniu jezykow
 //		- zaimportowac smartscoresearch z kydpdict?
-//	- todisplay obliczane z wielkosci widgeta vs wielkosci fontu
-//		- trzeba przechwytywac info o resize!
-//		- trzeba znac rozmiar widgetu z lista
-//		- trzeba znac rozmiar domyslnego fontu
-//	- geometria jakos sensowniej (jest niezle, refinement)
+//	- geometria jakos sensowniej (jest niezle, refinement, po prawej stronie i line)
 //	- usunac printfy przed release
 // LATER:
 //	- opcja do ustawiania distance (raczej suwak niz liczba)
@@ -119,6 +116,7 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 
 	config = new bydpConfig();
 	myDict = new ydpDictionary(outputView, dictList, config);
+	this->FrameResized(0.0, 0.0);
 	UpdateMenus();
 	wordInput->MakeFocus(true);
 	firstStart = true;
@@ -318,6 +316,7 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			config->setFocusOnSelf = !config->setFocusOnSelf;
 			config->save();
 			UpdateMenus();
+			break;
 		case B_CLIPBOARD_CHANGED:
 			NewClipData();
 			break;
@@ -341,4 +340,18 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 bool BYdpMainWindow::QuitRequested() {
 	be_app->PostMessage(B_QUIT_REQUESTED);
 	return BWindow::QuitRequested();
+}
+
+void BYdpMainWindow::FrameResized(float width, float height) {
+	float dictSize;
+	float itemSize;
+	int spacefor;
+	font_height myHeight;
+	dictList->GetFontHeight(&myHeight);
+	dictSize = dictList->Bounds().Height();
+	itemSize = myHeight.leading+myHeight.ascent+myHeight.descent;
+	spacefor = (int)(dictSize/itemSize-2);
+	if (spacefor<1) spacefor = 1;
+	config->todisplay = spacefor;
+	printf("spacefor: %i\n",spacefor);
 }

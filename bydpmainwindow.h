@@ -19,6 +19,7 @@
 		public:
 			BYdpMainWindow(const char *windowTitle);
 			~BYdpMainWindow();
+			virtual void FrameResized(float width, float height);
 			virtual void MessageReceived(BMessage *Message);
 			virtual bool QuitRequested();
 			virtual void RefsReceived(BMessage *Message);
