@@ -8,6 +8,8 @@ ydpDictionary::ydpDictionary(BTextView *output, BListView *dict, bydpConfig *con
 	dictList = dict;
 	cnf = config;
 
+	dictionaryReady = false;
+
 	for (i=0;i<2;i++) {
 		dictCache[i].wordCount = -1;
 		dictCache[i].indexes = NULL;
@@ -31,6 +33,10 @@ ydpDictionary::~ydpDictionary() {
 }
 
 void ydpDictionary::GetDefinition(int index) {
+	if (!dictionaryReady) {
+		outputView->SetText("Proszę skonfigurować ścieżkę dostępu do plików słownika.\n");
+		return;
+	}
 	static int lastIndex = -1;
 	if (index < 0)
 		index = lastIndex;
@@ -69,6 +75,7 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 		dictCache[i].words = words;
 	}
 	lastresult = -1;
+	dictionaryReady = true;
 	return 0;
 }
 
@@ -335,6 +342,11 @@ char *ydpDictionary::ConvertFromUtf(const char *input) {
 int ydpDictionary::FindWord(const char *wordin)
 {
 	int result,i,j;
+
+	if (!dictionaryReady) {
+		outputView->SetText("Proszę skonfigurować ścieżkę dostępu do plików słownika.\n");
+		return -1;
+	}
 
 	switch (cnf->searchmode) {
 		case SEARCH_FUZZY:

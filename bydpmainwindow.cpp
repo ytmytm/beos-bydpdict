@@ -44,6 +44,12 @@ const uint32 MENU_COLOR3 =			'MCo3';
 BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	BRect(64, 64, 600, 480), windowTitle, B_TITLED_WINDOW, 0 ) {
 
+	if ((open_sem = create_sem(1,"OpenDict semaphore")) < B_OK) {
+		AppReturnValue = open_sem;
+		be_app->PostMessage(B_QUIT_REQUESTED);
+		return;
+	}
+
 	BView *MainView(
 		new BView(BWindow::Bounds(), NULL, B_FOLLOW_ALL, 0) );
 
@@ -52,6 +58,8 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 		be_app->PostMessage(B_QUIT_REQUESTED);
 		return;
 	}
+
+	this->Hide();
 
 	MainView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	BWindow::AddChild(MainView);
@@ -111,9 +119,16 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	config = new bydpConfig();
 	myDict = new ydpDictionary(outputView, dictList, config);
 	printf("about to open dictionary\n");
-	myDict->OpenDictionary();	/// XXX prob! will not block on ConfigPath
+	firstOpen = true;
+	if (myDict->OpenDictionary() < 0) {
+		printf("error opening dictionary\n");
+		ConfigPath();	// configure path and try again later
+	} else {
+		wordInput->SetText("A");
+		this->Show();
+		firstOpen = false;
+	}
 	UpdateMenus();
-	wordInput->SetText("A");
 	wordInput->MakeFocus(true);
 }
 
@@ -176,7 +191,7 @@ void BYdpMainWindow::RefsReceived(BMessage *Message) {
 	ref_num = 0;
 	do {
 		if ((err = Message->FindRef("refs", ref_num, &ref)) != B_OK)
-			return;
+			goto skip;
 		BPath path;
 		BEntry myEntry(&ref);
 		myEntry.GetPath(&path);
@@ -185,6 +200,17 @@ void BYdpMainWindow::RefsReceived(BMessage *Message) {
 		config->save();
 		ref_num++;
 	} while (1);
+skip:
+	printf("about to reopen dict\n");
+	if (myDict->OpenDictionary() < 0) {
+		printf("failed\n");
+		ConfigPath();
+	} else {
+		printf("success\n");
+		firstOpen = false;
+		wordInput->SetText("A");
+		this->Show();
+	}
 }
 
 void BYdpMainWindow::MessageReceived(BMessage *Message) {
@@ -249,7 +275,16 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			ConfigColour(3);
 			break;
 		case B_REFS_RECEIVED:
-			RefsReceived(Message);	/// XXX why manuall??
+			RefsReceived(Message);
+			break;
+		case B_CANCEL:
+			printf("canceled\n");
+			if (firstOpen) {
+				printf("requesting quit\n");
+//				QuitRequested();
+			} else {
+				printf("releaseing sem\n");
+			}
 			break;
 		default:
 			BWindow::MessageReceived(Message);

@@ -9,6 +9,7 @@
 	#include <TextView.h>
 	#include <ListView.h>
 	#include <MenuItem.h>
+	#include <OS.h>
 	#include "globals.h"
 	#include "bydpconfig.h"
 	#include "bydpconfigure.h"
@@ -37,6 +38,9 @@
 			ydpDictionary *myDict;
 			bydpConfig *config;
 			bydpConfigure *myDialog;
+
+			bool firstOpen;
+			sem_id open_sem;
 	};
 
 #endif

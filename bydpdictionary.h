@@ -70,7 +70,7 @@
 				unsigned long *indexes;
 			} dictCache[2];
 			int lastresult;
-
+			bool dictionaryReady;
 
 			// parser variables
 			char *def;
