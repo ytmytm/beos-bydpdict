@@ -127,6 +127,15 @@ void BYdpMainWindow::UpdateLanguages(bool newlang) {
 	HandleModifiedInput(true);
 }
 
+void BYdpMainWindow::ConfigDialog(void) {
+	myDialog = new bydpConfigure("Ustawienia", this);
+	myDialog->Show();
+}
+
+void BYdpMainWindow::ConfigUpdate(void) {
+	printf("update config\n");
+}
+
 void BYdpMainWindow::MessageReceived(BMessage *Message) {
 	int item;
 	this->DisableUpdates();
@@ -147,6 +156,7 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			break;
 		case MENU_SETTINGS:
 			printf("menu settings\n");
+			ConfigDialog();
 			break;
 		case MENU_ENG2POL:
 			printf("eng2pol\n");

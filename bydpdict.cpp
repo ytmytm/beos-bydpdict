@@ -2,7 +2,7 @@
 #include "bydpdict.h"
 #include "globals.h"
 
-BYdpApp::BYdpApp() : BApplication("application/x-vnd.generic-BYdpDict")
+BYdpApp::BYdpApp() : BApplication(APP_SIGNATURE)
 {
 	myMainWindow = new BYdpMainWindow("BYDPDict");
 	if (myMainWindow != NULL) {

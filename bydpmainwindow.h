@@ -11,6 +11,7 @@
 	#include <MenuItem.h>
 	#include "globals.h"
 	#include "bydpconfig.h"
+	#include "bydpconfigure.h"
 	#include "bydpdictionary.h"
 
 	class BYdpMainWindow : public BWindow {
@@ -19,10 +20,12 @@
 			~BYdpMainWindow();
 			virtual void MessageReceived(BMessage *Message);
 			virtual bool QuitRequested();
+			void ConfigUpdate(void);
 		private:
 			void HandleModifiedInput(bool force);
 			void UpdateMenus(void);
 			void UpdateLanguages(bool newlang);
+			void ConfigDialog(void);
 			BTextView *outputView;
 			BTextControl *wordInput;
 			BListView *dictList;
@@ -30,6 +33,7 @@
 
 			ydpDictionary *myDict;
 			bydpConfig *config;
+			bydpConfigure *myDialog;
 	};
 
 #endif
