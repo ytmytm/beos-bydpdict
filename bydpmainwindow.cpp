@@ -4,17 +4,23 @@
 //		- to beginswith z bydpdictionary nadaje sie tylko do naiwnego
 //		  szukania przy wpisywaniu po literce
 //		- zaimportowac smartscoresearch z kydpdict?
-//	- cos do szybkiego czyszczenia inputboksa (button/ESC?)
-//		- KeyDown nie bardzo jadzie, cos z shortcuts z bwindow
 //	- todisplay obliczane z wielkosci widgeta vs wielkosci fontu
 //		- trzeba przechwytywac info o resize!
+//		- trzeba znac rozmiar widgetu z lista
+//		- trzeba znac rozmiar domyslnego fontu
 //	- geometria jakos sensowniej (jest niezle, refinement)
+//	- usunac printfy przed release
 // LATER:
+//	- opcja do ustawiania distance (raczej suwak niz liczba)
 //	- nie ma odswiezenia outputView po zmianie kolorow (jakos to sie pieprzy)
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
 //	- lista wyrazow przy nie-fuzzy zachowuje sie nieintuicyjnie, na razie
 //	  musi wystarczyc, w przyszlosci pewnie lepiej byloby sportowac kydpdict
+// DOCUMENT:
+//	- ze wybiera sie katalog w sciezce
+//	- po co sa ktore opcje
+//	- ze CTRL+SHIFT+ESC czysci input
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>
@@ -27,6 +33,7 @@
 const uint32 MSG_MODIFIED_INPUT =	'MInp';	// wpisanie litery
 const uint32 MSG_LIST_SELECTED =	'LSel'; // klik na liscie
 const uint32 MSG_LIST_INVOKED =		'LInv'; // dwuklik na liscie
+const uint32 MSG_CLEAR_INPUT =		'IClr';	// shortcut - czyszczenie linii
 
 const uint32 MENU_SWITCH =			'MSwi';
 const uint32 MENU_ENG2POL =			'ME2P';
@@ -55,6 +62,7 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	}
 
 	this->Hide();
+	this->AddShortcut(B_ESCAPE,B_SHIFT_KEY,new BMessage(MSG_CLEAR_INPUT));
 
 	MainView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	BWindow::AddChild(MainView);
@@ -83,7 +91,7 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	MainView->AddChild(menubar);
 
 	BMenu *menu = new BMenu("Plik");
-	menu->AddItem(new BMenuItem("Zakończ", new BMessage(B_QUIT_REQUESTED), 'Z'));
+	menu->AddItem(new BMenuItem("Zakończ", new BMessage(B_QUIT_REQUESTED), 'Q'));
 	menubar->AddItem(menu);
 
 	menu = new BMenu("Język");
@@ -215,7 +223,7 @@ void BYdpMainWindow::ConfigPath(void) {
 	myPanel = new BFilePanel(B_OPEN_PANEL,
 			&mesg, NULL, B_DIRECTORY_NODE, false, NULL, NULL, true, true);
 	myPanel->Show();
-	myPanel->Window()->SetTitle("Podaj katalog z plikami słownika");
+	myPanel->Window()->SetTitle("Wybierz katalog z plikami słownika");
 }
 
 void BYdpMainWindow::RefsReceived(BMessage *Message) {
@@ -254,6 +262,9 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 				item = dictList->CountItems();
 			if (item>=0)
 				myDict->GetDefinition(myDict->wordPairs[item]);
+			break;
+		case MSG_CLEAR_INPUT:
+			wordInput->SetText("");
 			break;
 //		case MENU_SETTINGS:
 //			printf("menu settings\n");
