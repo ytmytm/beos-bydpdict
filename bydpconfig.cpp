@@ -144,7 +144,7 @@ void bydpConfig::setDefaultConfiguration(void) {
 //	topPath = "/boot/home/Desktop/beos/kydpdict/";
 	topPath = "/boot/home/Desktop/beos/";
 	toPolish = true;
-	clipboardTracking = false;
+	clipboardTracking = true;
 	searchmode = SEARCH_BEGINS;
 //	searchmode = SEARCH_FUZZY;
 	distance = 3;

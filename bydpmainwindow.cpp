@@ -1,8 +1,8 @@
 //
 // TODO:
 // - menu:
+//	- wyszukiwanie (po clipie) - to nie jest pelne beginswitch
 //	- dialog do wyboru kolorow
-//	- jakas obsluga clipboard (o ile to mozliwe)
 //	- cos do szybkiego czyszczenia inputboksa (button/ESC?)
 //		- KeyDown nie bardzo jadzie
 //	- geometria jakos sensowniej (jest niezle, refinement)
@@ -15,6 +15,7 @@
 #include <Menu.h>
 #include <MenuBar.h>
 #include <Path.h>
+#include <Clipboard.h>
 #include <stdio.h>
 
 const uint32 MSG_MODIFIED_INPUT =	'MInp';	// wpisanie litery
@@ -32,6 +33,7 @@ const uint32 MENU_COLOR0 =			'MCo0';
 const uint32 MENU_COLOR1 =			'MCo1';
 const uint32 MENU_COLOR2 =			'MCo2';
 const uint32 MENU_COLOR3 =			'MCo3';
+const uint32 MENU_CLIP =			'MCli';
 
 BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	BRect(64, 64, 600, 480), windowTitle, B_TITLED_WINDOW, 0 ) {
@@ -95,6 +97,8 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	menu->AddItem(new BMenuItem("Kolor1", new BMessage(MENU_COLOR1)));
 	menu->AddItem(new BMenuItem("Kolor2", new BMessage(MENU_COLOR2)));
 	menu->AddItem(new BMenuItem("Kolor3", new BMessage(MENU_COLOR3)));
+	menu->AddSeparatorItem();
+	menu->AddItem(menuClip = new BMenuItem("Śledzenie schowka", new BMessage(MENU_CLIP), 'L'));
 	menubar->AddItem(menu);
 
 	config = new bydpConfig();
@@ -103,9 +107,31 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	wordInput->MakeFocus(true);
 	firstStart = true;
 	TryToOpenDict();
+
+	BMessenger mesg(this);
+	be_clipboard->StartWatching(mesg);
 }
 
 BYdpMainWindow::~BYdpMainWindow() {
+}
+
+void BYdpMainWindow::NewClipData(void) {
+	const char *text; 
+	int32 textLen; 
+	BString result;
+	BMessage *clip = (BMessage *)NULL; 
+
+	if (!config->clipboardTracking)
+		return;
+
+	if (be_clipboard->Lock()) { 
+		if ((clip = be_clipboard->Data()))
+			clip->FindData("text/plain", B_MIME_TYPE,(const void **)&text, &textLen);
+		be_clipboard->Unlock();
+		result.SetTo(text,textLen);
+		wordInput->SetText(result.String());
+		printf("got:%s:clip\n",result.String());
+	}
 }
 
 void BYdpMainWindow::HandleModifiedInput(bool force) {
@@ -124,6 +150,7 @@ void BYdpMainWindow::UpdateMenus(void) {
 	menuFuzzy->SetMarked(config->searchmode == SEARCH_FUZZY);
 	menuEng->SetMarked(config->toPolish);
 	menuPol->SetMarked(!config->toPolish);
+	menuClip->SetMarked(config->clipboardTracking);
 }
 
 void BYdpMainWindow::UpdateLanguages(bool newlang) {
@@ -249,6 +276,14 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			break;
 		case MENU_COLOR3:
 			ConfigColour(3);
+			break;
+		case MENU_CLIP:
+			config->clipboardTracking = !config->clipboardTracking;
+			config->save();
+			UpdateMenus();
+			break;
+		case B_CLIPBOARD_CHANGED:
+			NewClipData();
 			break;
 		case B_REFS_RECEIVED:
 			RefsReceived(Message);

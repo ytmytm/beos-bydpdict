@@ -24,6 +24,7 @@
 			virtual void RefsReceived(BMessage *Message);
 			void ConfigUpdate(void);
 		private:
+			void NewClipData(void);
 			void HandleModifiedInput(bool force);
 			void UpdateMenus(void);
 			void UpdateLanguages(bool newlang);
@@ -34,7 +35,7 @@
 			BTextView *outputView;
 			BTextControl *wordInput;
 			BListView *dictList;
-			BMenuItem *menuFuzzy, *menuPlain, *menuEng, *menuPol;
+			BMenuItem *menuFuzzy, *menuPlain, *menuEng, *menuPol, *menuClip;
 
 			ydpDictionary *myDict;
 			bydpConfig *config;
