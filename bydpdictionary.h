@@ -52,16 +52,25 @@
 			// GUI data holders
 			BTextView *outputView;
 			BListView *dictList;
-			int lastIndex;
 
 			// configuration holder
 			bydpConfig *cnf;
 
+			// dictionary data
 			BFile fIndex, fData;
 			int wordCount;
 			unsigned long *indexes;
 			char **words;
 			BString curDefinition;
+
+			// caching stuff
+			struct dictionaryCache {
+				int wordCount;
+				char **words;
+				unsigned long *indexes;
+			} dictCache[2];
+			int lastresult;
+
 
 			// parser variables
 			char *def;

@@ -8,6 +8,7 @@
 	#include <TextControl.h>
 	#include <TextView.h>
 	#include <ListView.h>
+	#include <MenuItem.h>
 	#include "globals.h"
 	#include "bydpconfig.h"
 	#include "bydpdictionary.h"
@@ -19,10 +20,13 @@
 			virtual void MessageReceived(BMessage *Message);
 			virtual bool QuitRequested();
 		private:
-			void HandleModifiedInput(void);
+			void HandleModifiedInput(bool force);
+			void UpdateMenus(void);
+			void UpdateLanguages(bool newlang);
 			BTextView *outputView;
 			BTextControl *wordInput;
 			BListView *dictList;
+			BMenuItem *menuFuzzy, *menuPlain, *menuEng, *menuPol;
 
 			ydpDictionary *myDict;
 			bydpConfig *config;

@@ -2,21 +2,40 @@
 #include "bydpdictionary.h"
 
 ydpDictionary::ydpDictionary(BTextView *output, BListView *dict, bydpConfig *config) {
+	int i;
+
 	outputView = output;
 	dictList = dict;
 	cnf = config;
-	lastIndex = -1;
+
+	for (i=0;i<2;i++) {
+		dictCache[i].wordCount = -1;
+		dictCache[i].indexes = NULL;
+		dictCache[i].words = NULL;
+	}
 }
 
 ydpDictionary::~ydpDictionary() {
+	int i,j;
 
+	for (i=0;i<1;i++) {
+		if (dictCache[i].wordCount>0) {
+			if (dictCache[i].indexes) delete [] dictCache[i].indexes;
+			if (dictCache[i].words) {
+				for (j=0;j<dictCache[i].wordCount;j++)
+					delete [] dictCache[i].words[j];
+				delete [] dictCache[i].words;
+			}
+		}
+	}
 }
 
 void ydpDictionary::GetDefinition(int index) {
-	if (index == lastIndex)
-		return;
+	static int lastIndex = -1;
 	if (index < 0)
 		index = lastIndex;
+	if (index == lastIndex)
+		return;
 	lastIndex = index;
 	if (ReadDefinition(index) == 0) {
 		ParseRTF();
@@ -26,6 +45,7 @@ void ydpDictionary::GetDefinition(int index) {
 }
 
 int ydpDictionary::OpenDictionary(const char *index, const char *data) {
+	int i;
 
 	if ((fIndex.SetTo(index, B_READ_ONLY)) != B_OK) {
 		printf ("error opening index\n");	/// XXX bledy!
@@ -35,7 +55,20 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 		printf ("error opening data\n");	/// XXX bledy!
 		return 1;
 	}
-	FillWordList();
+
+	i = 0;
+	if (!(cnf->toPolish)) i++;
+	if (dictCache[i].wordCount>0) {
+		wordCount = dictCache[i].wordCount;
+		indexes = dictCache[i].indexes;
+		words = dictCache[i].words;
+	} else {
+		FillWordList();
+		dictCache[i].wordCount = wordCount;
+		dictCache[i].indexes = indexes;
+		dictCache[i].words = words;
+	}
+	lastresult = -1;
 	return 0;
 }
 
@@ -54,12 +87,7 @@ int ydpDictionary::OpenDictionary(void) {
 void ydpDictionary::CloseDictionary(void) {
 	fIndex.Unset();
 	fData.Unset();
-	if (indexes) delete [] indexes;
-	if (words) {
-		for (int j=0;j<wordCount;j++)
-			delete [] words[j];
-		delete [] words;
-	}
+	ClearWordList();
 }
 
 unsigned int fix32(unsigned int x) {
@@ -86,8 +114,8 @@ void ydpDictionary::FillWordList(void) {
 	printf("have %i words\n",wordCount);
 
 	indexes = new unsigned long [wordCount+2];
-	words = new char* [wordCount+1];
-	wordPairs = new int [wordCount+1];
+	words = new char* [wordCount+2];
+	wordPairs = new int [wordCount+2];
 
 	words[wordCount]=0;
 
@@ -315,9 +343,12 @@ int ydpDictionary::FindWord(const char *wordin)
 		case SEARCH_BEGINS:
 		default:
 			result = BeginsFindWord(wordin);
+			if (lastresult == result)
+				return result;
+			lastresult = result;
 			ClearWordList();
 			j = 0;
-			i = result;
+			i = result;	if (i<0) i=0;
 //			i = result-todisplay; if (i<0) i=0;
 			for (;(i<wordCount) && (i<result+cnf->todisplay);i++, j++) {
 				dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
@@ -331,11 +362,12 @@ int ydpDictionary::FindWord(const char *wordin)
 int ydpDictionary::BeginsFindWord(const char *wordin)
 {
 	char *word = ConvertFromUtf(wordin);
+	int len = strlen(word);
 	int i;
 
 	for (i=0; i<wordCount; i++)
 //		if (!strncasecmp(words[x], lower_pl(word), strlen(word)))
-		if (!strncmp(words[i], word, strlen(word)))
+		if (!strncmp(words[i], word, len))
 			return i;
 	return -1;
 }
