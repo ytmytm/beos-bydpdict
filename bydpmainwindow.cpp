@@ -1,21 +1,28 @@
 //
 // TODO:
-// - obsluga A_SUPER (zmiany na font - size&baseline (shear?)
 // - menu
 //		- konfiguracja
 //			- sciezki
 //			- kolory
 //			- podobienstwo
 //			- clipboard tracking
+//			- sposob wyszukiwania:full/fuzzy (jak bardzo fuzzy i ile znalezc)
 //		- zmiana kierunku tlumaczenia
 //	- clipboard
+//	- wyszukiwanie
+//		- beginswith
+//			- liste wypelnic tylko raz? przy przelaczeniu typu szukania?
 //	- konwersja znakow
+//		- duże Ś i duże Ż nieobecne (są kropki)
 //		- wordinput przed szukaniem (utf8->cp1250)
+//			- beosowe nie dziala, zrobic wlasny zrzut (tylko litery)
+//			- wziac tabelke utf16 i przekonwertowac na utf8, uzywac do
+//			  kodowania w obie storny
 //	- klasa config do trzymania konfiguracji
 //	- cos do szybkiego czyszczenia inputboksa (ESC?)
-//	- geometria jakos sensowniej
+//	- geometria jakos sensowniej (jest niezle, refinement)
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
-//
+//		- przychodzi msg o zmianie inputa!
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>
@@ -59,7 +66,7 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 
 	myDict = new ydpDictionary(outputView, dictList);
 	printf("about to open dictionary\n");
-	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict100.idx", "/boot/home/Desktop/beos/kydpdict/dict100.dat");
+	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict101.idx", "/boot/home/Desktop/beos/kydpdict/dict101.dat");
 	wordInput->SetText("A");
 	wordInput->MakeFocus(true);
 }
@@ -67,13 +74,19 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 BYdpMainWindow::~BYdpMainWindow() {
 }
 
+void BYdpMainWindow::HandleModifiedInput(void) {
+	int item = myDict->FuzzyFindWord(wordInput->Text());
+//	dictList->Select(0);	// will force selection message
+	printf("new input\n");
+	myDict->GetDefinition(item);
+}
+
 void BYdpMainWindow::MessageReceived(BMessage *Message) {
 	int item;
 	switch (Message->what) {
 		case MSG_MODIFIED_INPUT:
 			this->DisableUpdates();
-			item = myDict->FuzzyFindWord(wordInput->Text());
-			myDict->GetDefinition(item);
+			HandleModifiedInput();
 			this->EnableUpdates();
 			break;
 		case MSG_LIST_SELECTED:
@@ -84,8 +97,9 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 				item = dictList->CountItems();
 			if (item>=0)
 				myDict->GetDefinition(myDict->wordPairs[item]);
+			printf("selected %i\n",item);
 			this->EnableUpdates();
-			break;			
+			break;
 		default:
 			BWindow::MessageReceived(Message);
 			break;

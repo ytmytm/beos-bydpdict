@@ -166,7 +166,7 @@ void ydpDictionary::ParseRTF(void) {
 // (parametr newattr jest zbedny, liczy sie tylko oldattr)
 // XXX make configurable colours
 void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
-	printf("adding line, oldattr %i, newattr %i, line:%s:\n",oldattr,newattr,line.String());
+//	printf("adding line, oldattr %i, newattr %i, line:%s:\n",oldattr,newattr,line.String());
 	if (line.Length() == 0)
 		return;
 	newattr = oldattr;
@@ -174,6 +174,9 @@ void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 	BFont myfont(be_plain_font);
 	colour.red = colour.green = colour.blue = 0;
 
+	if (newattr & A_SUPER) {
+		myfont.SetSize(10.0);
+	}
 	if (newattr & A_BOLD) {
 		myfont.SetFace(B_BOLD_FACE);
 	}

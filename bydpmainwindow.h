@@ -18,6 +18,7 @@
 			virtual void MessageReceived(BMessage *Message);
 			virtual bool QuitRequested();
 		private:
+			void HandleModifiedInput(void);
 			BTextView *outputView;
 			BTextControl *wordInput;
 			BListView *dictList;
