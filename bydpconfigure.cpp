@@ -114,8 +114,7 @@ void bydpConfigure::ConfigUpdate(void) {
 	myConfig->save();
 }
 
-void bydpConfigure::MessageReceived(BMessage * Message)
-{
+void bydpConfigure::MessageReceived(BMessage * Message) {
 	switch(Message->what)
 	{
 		case BUTTON_OK:
