@@ -14,8 +14,6 @@
 //	- todisplay obliczane jakos samodzielnie?
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
-//	- potrzeba czegos do zablokowania aplikacji, dopoki nie przyjdzie
-//	  wynik z ConfigPath i Refs! (semafor? lock?)
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>
@@ -43,12 +41,6 @@ const uint32 MENU_COLOR3 =			'MCo3';
 
 BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	BRect(64, 64, 600, 480), windowTitle, B_TITLED_WINDOW, 0 ) {
-
-	if ((open_sem = create_sem(1,"OpenDict semaphore")) < B_OK) {
-		AppReturnValue = open_sem;
-		be_app->PostMessage(B_QUIT_REQUESTED);
-		return;
-	}
 
 	BView *MainView(
 		new BView(BWindow::Bounds(), NULL, B_FOLLOW_ALL, 0) );
@@ -119,14 +111,12 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	config = new bydpConfig();
 	myDict = new ydpDictionary(outputView, dictList, config);
 	printf("about to open dictionary\n");
-	firstOpen = true;
 	if (myDict->OpenDictionary() < 0) {
 		printf("error opening dictionary\n");
 		ConfigPath();	// configure path and try again later
 	} else {
 		wordInput->SetText("A");
 		this->Show();
-		firstOpen = false;
 	}
 	UpdateMenus();
 	wordInput->MakeFocus(true);
@@ -207,7 +197,6 @@ skip:
 		ConfigPath();
 	} else {
 		printf("success\n");
-		firstOpen = false;
 		wordInput->SetText("A");
 		this->Show();
 	}
@@ -277,15 +266,10 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 		case B_REFS_RECEIVED:
 			RefsReceived(Message);
 			break;
-		case B_CANCEL:
-			printf("canceled\n");
-			if (firstOpen) {
-				printf("requesting quit\n");
-//				QuitRequested();
-			} else {
-				printf("releaseing sem\n");
-			}
-			break;
+//		case B_CANCEL:
+//			printf("canceled\n");
+//			QuitRequested();
+//			break;
 		default:
 			BWindow::MessageReceived(Message);
 			break;
