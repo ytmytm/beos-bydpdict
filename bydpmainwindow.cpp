@@ -12,11 +12,9 @@
 //	- wyszukiwanie
 //		- beginswith
 //			- liste wypelnic tylko raz? przy przelaczeniu typu szukania?
-//	- konwersja znakow
-//		- w nowej tabeli duże ź nieobecne (jest kropka)
-//		- wordinput przed szukaniem (utf8->cp1250)
 //	- klasa config do trzymania konfiguracji
 //	- cos do szybkiego czyszczenia inputboksa (ESC?)
+//		- KeyDown nie bardzo jadzie
 //	- geometria jakos sensowniej (jest niezle, refinement)
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
@@ -63,7 +61,7 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 
 	myDict = new ydpDictionary(outputView, dictList);
 	printf("about to open dictionary\n");
-	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict100.idx", "/boot/home/Desktop/beos/kydpdict/dict100.dat");
+	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict101.idx", "/boot/home/Desktop/beos/kydpdict/dict101.dat");
 	wordInput->SetText("A");
 	wordInput->MakeFocus(true);
 }
@@ -72,7 +70,7 @@ BYdpMainWindow::~BYdpMainWindow() {
 }
 
 void BYdpMainWindow::HandleModifiedInput(void) {
-	int item = myDict->FuzzyFindWord(wordInput->Text());
+	int item = myDict->FindWord(wordInput->Text());
 //	dictList->Select(0);	// will force selection message
 	printf("new input\n");
 	myDict->GetDefinition(item);

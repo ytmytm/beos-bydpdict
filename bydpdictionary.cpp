@@ -1,12 +1,12 @@
 
 #include "bydpdictionary.h"
 
-char *utf8_table[] = TABLE_UTF8;
-
 ydpDictionary::ydpDictionary(BTextView *output, BListView *dict) {
 	outputView = output;
 	dictList = dict;
 	lastIndex = -1;
+	searchmode = SEARCH_FUZZY;
+	distance = 3;
 }
 
 ydpDictionary::~ydpDictionary() {
@@ -59,7 +59,7 @@ unsigned short fix16(unsigned short x) {
 
 void ydpDictionary::FillWordList(void) {
 
-	printf("in fill word list\n");
+//	printf("in fill word list\n");
 	unsigned long pos;
 	unsigned long index[2];
 	unsigned short wcount;
@@ -86,9 +86,6 @@ void ydpDictionary::FillWordList(void) {
 
 	fIndex.Seek(pos, SEEK_SET);
 	do {
-//		if ((current % 500)==2)
-//			printf("idx: %i, data:%s\n", current, words[current-1]);
-
 		fIndex.Read(&index[0], 8);
 		indexes[current]=fix32(index[1]);
 		words[current] = new char [fix32(index[0]) & 0xff];
@@ -202,70 +199,6 @@ void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 	line="";
 }
 
-char *ydpDictionary::ConvertToUtf(BString line) {
-	static char buf[1024];
-	static char letter[2] = "\0";
-	unsigned char *inp;
-	memset(buf, 0, sizeof(buf));
-
-	inp = (unsigned char *)line.String();
-	for (; *inp; inp++) {
-		if (*inp > 126) {
-			strncat(buf, utf8_table[*inp - 127], sizeof(buf) - strlen(buf) - 1);
-		} else {
-			letter[0] = *inp;
-			strncat(buf, letter, sizeof(buf) - strlen(buf) - 1);
-		}
-	}
-	return buf;
-}
-
-char *ydpDictionary::ConvertFromUtf(const char *input) {
-	static char buf[1024];
-	unsigned char *inp, *inp2;
-	memset(buf, 0, sizeof(buf));
-	int i,j,k;
-	unsigned char a,b;
-	bool notyet;
-
-	k=0;
-	// wez znak;
-	// dla kazdego z tabeli:
-	//		- porownaj znak z pierwszym
-	//		- te same: powownaj kolejny znak z drugim
-	//		- te same: wypisz indeks+128 i wyjdz z petli
-
-	inp = (unsigned char*)input;
-	inp2 = inp; inp2++;
-	for (; *inp; inp++, inp2++) {
-		a = *inp;
-		b = *inp2;
-		i=0;
-		notyet=true;
-		printf("char:%c\n",a);
-		while ((i<129) && (notyet)) {
-			if (a==utf8_table[i][0])
-				if (utf8_table[i][1]!=0) {
-					if (b==utf8_table[i][1])
-						notyet=false;
-				} else {
-					notyet=false;
-				}
-			i++;
-		}
-		if (notyet==false) {
-			printf("literal,i=%i\n",i);
-			buf[k]=a;
-		} else {
-			printf("from table,i=%i\n",i);
-			buf[k]=i+127;
-		}
-		k++;
-	}
-	buf[k]='\0';
-	return buf;
-}
-
 char* ydpDictionary::ParseToken(char *def) {
     char token[64];
     int tp;
@@ -296,17 +229,109 @@ char* ydpDictionary::ParseToken(char *def) {
     return def;
 }
 
+/////////////////////
+// utf8 <-> cp1250 convertion stuff below
+//
+
+const char *utf8_table[] = TABLE_UTF8;
+
+char *ydpDictionary::ConvertToUtf(BString line) {
+	static char buf[1024];
+	static char letter[2] = "\0";
+	unsigned char *inp;
+	memset(buf, 0, sizeof(buf));
+
+	inp = (unsigned char *)line.String();
+	for (; *inp; inp++) {
+		if (*inp > 126) {
+			strncat(buf, utf8_table[*inp - 127], sizeof(buf) - strlen(buf) - 1);
+		} else {
+			letter[0] = *inp;
+			strncat(buf, letter, sizeof(buf) - strlen(buf) - 1);
+		}
+	}
+	return buf;
+}
+
+char *ydpDictionary::ConvertFromUtf(const char *input) {
+	static char buf[1024];
+	unsigned char *inp, *inp2;
+	memset(buf, 0, sizeof(buf));
+	int i,k;
+	char a,b;
+	bool notyet;
+
+	k=0;
+	inp = (unsigned char*)input;
+	inp2 = inp; inp2++;
+	for (; *inp; inp++, inp2++) {
+		a = *inp;
+		b = *inp2;
+		i=0;
+		notyet=true;
+		while ((i<129) && (notyet)) {
+			if (a==utf8_table[i][0]) {
+				if (utf8_table[i][1]!=0) {
+					if (b==utf8_table[i][1]) {
+						inp++;
+						inp2++;
+						notyet=false;
+					}
+				} else {
+					notyet=false;
+				}
+			}
+			i++;
+		}
+		if (notyet)
+			buf[k]=a;
+		else
+			buf[k]=i+126;
+		k++;
+	}
+	buf[k]='\0';
+	return buf;
+}
+
 ////////////////
 // search stuff below
 
-int ydpDictionary::FuzzyFindWord(const char *word)
+int ydpDictionary::FindWord(const char *wordin)
+{
+	static int lastmode=-1;
+
+	if (searchmode != lastmode) {
+		lastmode = searchmode;
+		if (searchmode == SEARCH_BEGINS) {
+			// wyczysc liste i wypelnij calkowicie
+		}
+	}
+	switch (searchmode) {
+		case SEARCH_FUZZY:
+			return FuzzyFindWord(wordin);
+			break;
+		case SEARCH_BEGINS:
+		default:
+			return FuzzyFindWord(wordin);
+			break;
+	}
+}
+
+int ydpDictionary::BeginsFindWord(const char *wordin)
+{
+	char *word = ConvertFromUtf(wordin);
+}
+
+int ydpDictionary::FuzzyFindWord(const char *wordin)
 {
 	int i, numFound, best, score, hiscore;
 
-	printf("result:%s\n",ConvertFromUtf("ciążańebióśka"));
-
     if ((wordCount<0) || (words == NULL))
 		return -1;
+	if (strlen(wordin)==0)
+		return 0;
+
+	char *word = ConvertFromUtf(wordin);
 
 	// wyczyszczenie listy
 	void *anItem;
@@ -314,13 +339,10 @@ int ydpDictionary::FuzzyFindWord(const char *word)
 		delete anItem;
 	dictList->MakeEmpty();
 
-    int distance = 2;		// XXX configurable!
     numFound = 0;
     best = 0;
     hiscore = distance;
     for (i=0;i<wordCount;i++)
-//	if (editDistance(codec->fromUnicode(wordEdit->text()),wordList[i]) < distance)
-//	    listBox->insertItem(codec->toUnicode(wordList[i]));
 		if ((score=editDistance(word,words[i])) < distance) {
 			dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
 			wordPairs[numFound] = i;
@@ -347,12 +369,14 @@ int ydpDictionary::editDistance(const char*slowo1, const char*slowo2)
 {
     int *row0, *row1, *row;
     int cost,i,j,m,n;
+    static int rowx[512];		// speedup!
+	static int rowy[512];
 
-    n = strlen(slowo1);
+    n = strlen(slowo1);	if (n>510) n=510;	// n+1 is used
     m = strlen(slowo2);
 
-    row0 = new int[n+1];
-    row1 = new int[n+1];
+	row0 = rowx;
+	row1 = rowy;
 
     for (i=0;i<=n;i++)
 	row0[i] = i;
@@ -368,7 +392,5 @@ int ydpDictionary::editDistance(const char*slowo1, const char*slowo2)
 	row1 = row;
     }
     cost = row0[n];
-    delete [] row0;
-    delete [] row1;
     return cost;
 }

@@ -19,6 +19,9 @@
 #define A_MARGIN 32
 #define A_SUPER 64
 
+#define SEARCH_BEGINS	1
+#define SEARCH_FUZZY	2
+
 	class ydpDictionary {
 		public:
 			ydpDictionary(BTextView *output, BListView *dict);
@@ -26,7 +29,7 @@
 
 			void GetDefinition(int index);
 			int OpenDictionary(const char *index, const char *data);
-			int FuzzyFindWord(const char *word);
+			int FindWord(const char *word);
 			void CloseDictionary(void);
 
 			int *wordPairs;		// # indeksow na liscie dictList
@@ -37,6 +40,8 @@
 			void ParseRTF(void);
 			void UpdateAttr(int oldattr, int newattr);
 			char *ParseToken(char *def);
+			int BeginsFindWord(const char *word);
+			int FuzzyFindWord(const char *word);
 		    int min3(const int a, const int b, const int c);
 		    int editDistance(const char*slowo1, const char*slowo2);
 		    char *ConvertToUtf(BString line);
@@ -46,6 +51,10 @@
 			BTextView *outputView;
 			BListView *dictList;
 			int lastIndex;
+
+			// these should go to config class
+			int distance;	// for fuzzy search
+			int searchmode;
 
 			BFile fIndex, fData;
 			int wordCount;
@@ -63,7 +72,7 @@
 #define TABLE_UTF8 { \
 		"~", \
 		".", ".", "<o>", "<3>", ".", "<|>", "<E>", "<^>", "<e>", \
-		"θ", "<i>", "<a>", "Ś", ":", "´", ".", "ŋ", \
+		"θ", "<i>", "<a>", "Ś", ":", "´", "Ź", "ŋ", \
 		".", ".", ".", ".", ".", ".", "ð", "æ", \
 		".", ".", ".", "ś", ".", ".", "ź", ".", \
 		"Ą", ".", "Ł", "¤", "Ľ", "Ś", "§", "¨", \
