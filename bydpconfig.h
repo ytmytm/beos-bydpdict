@@ -4,6 +4,7 @@
 
 #include <String.h>
 #include <Font.h>
+#include <File.h>
 
 #define SEARCH_BEGINS	1
 #define SEARCH_FUZZY	2
@@ -29,8 +30,14 @@
 			void save(void);
 			void setDefaultConfiguration(void);
 		private:
+			BFile conf;
 			BString cfgname;
 			void updateFName(void);
+
+			void writeRGB(BString variable, rgb_color value);
+			void writeInt(BString variable, int value);
+			void writeString(BString variable, BString value);
+			void writeBoolean(BString variable, bool value);
 	};
 
 #endif

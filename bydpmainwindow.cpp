@@ -1,12 +1,8 @@
 //
 // TODO:
+// - cos sie zepsulo z przelaczaniem jezykow? (chyba raczej default przeslania)
 // - menu:
-//		- config
-//			- kolory (4)
-//			- search method
-//				- plain: ile do pokazania
-//				- fuzzy: podobienstwo
-//			- cliptracking
+//		- parsowanie configa
 //	- clipboard
 //	- cos do szybkiego czyszczenia inputboksa (ESC?)
 //		- KeyDown nie bardzo jadzie
