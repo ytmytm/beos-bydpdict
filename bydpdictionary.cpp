@@ -1,6 +1,8 @@
 
 #include "bydpdictionary.h"
 
+char *utf8_table[] = TABLE_UNICODE;
+
 ydpDictionary::ydpDictionary(BTextView *output, BListView *dict) {
 	outputView = output;
 	dictList = dict;
@@ -25,11 +27,11 @@ void ydpDictionary::GetDefinition(int index) {
 int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 
 	if ((fIndex.SetTo(index, B_READ_ONLY)) != B_OK) {
-		printf ("error opening index\n");
+		printf ("error opening index\n");	/// XXX bledy!
 		return 1;
 	}
 	if ((fData.SetTo(data, B_READ_ONLY)) != B_OK) {
-		printf ("error opening data\n");
+		printf ("error opening data\n");	/// XXX bledy!
 		return 1;
 	}
 	FillWordList();
@@ -161,7 +163,7 @@ void ydpDictionary::ParseRTF(void) {
 
 //
 // wstawia na koniec tekst z odpowiednimi parametrami
-// (parametr newattr jest zbedny)
+// (parametr newattr jest zbedny, liczy sie tylko oldattr)
 // XXX make configurable colours
 void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 	printf("adding line, oldattr %i, newattr %i, line:%s:\n",oldattr,newattr,line.String());
@@ -191,9 +193,28 @@ void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 		colour.red = colour.blue = 0;
 	}
 	outputView->SetFontAndColor(&myfont,B_FONT_ALL,&colour);
+	line = ConvertToUtf(line);
 	outputView->Insert(textlen,line.String(),line.Length());
 	textlen+=line.Length();
 	line="";
+}
+
+char *ydpDictionary::ConvertToUtf(BString line) {
+	static char buf[1024];
+	static char letter[2] = "\0";
+	unsigned char *inp;
+	memset(buf, 0, sizeof(buf));
+
+	inp = (unsigned char *)line.String();
+	for (; *inp; inp++) {
+		if (*inp > 126) {
+			strncat(buf, utf8_table[*inp - 127], sizeof(buf) - strlen(buf) - 1);
+		} else {
+			letter[0] = *inp;
+			strncat(buf, letter, sizeof(buf) - strlen(buf) - 1);
+		}
+	}
+	return buf;
 }
 
 char* ydpDictionary::ParseToken(char *def) {
@@ -250,7 +271,7 @@ int ydpDictionary::FuzzyFindWord(const char *word)
 //	if (editDistance(codec->fromUnicode(wordEdit->text()),wordList[i]) < distance)
 //	    listBox->insertItem(codec->toUnicode(wordList[i]));
 		if ((score=editDistance(word,words[i])) < distance) {
-			dictList->AddItem(new BStringItem(words[i]));
+			dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
 			wordPairs[numFound] = i;
 			numFound++;
 			if (score<hiscore) {

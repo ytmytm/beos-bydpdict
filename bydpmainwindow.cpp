@@ -7,15 +7,14 @@
 //			- kolory
 //			- podobienstwo
 //			- clipboard tracking
-//		- zmien kierunek tlumaczenia
+//		- zmiana kierunku tlumaczenia
 //	- clipboard
-//	- konwersja znakow (output, ale i input (choc nie da sie wprowadzic))
-//		- polskie litery (cp1250->utf8, chyba jest gotowiec?)
-//		- fonetyka
+//	- konwersja znakow
+//		- wordinput przed szukaniem (utf8->cp1250)
 //	- klasa config do trzymania konfiguracji
 //	- cos do szybkiego czyszczenia inputboksa (ESC?)
 //	- geometria jakos sensowniej
-//	- po wyszukiwaniu pierwszy klik nie dziala
+//	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //
 
 #include "bydpmainwindow.h"
@@ -83,7 +82,7 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			item = dictList->CurrentSelection(0);
 			if (item>dictList->CountItems())
 				item = dictList->CountItems();
-			if (item>0)
+			if (item>=0)
 				myDict->GetDefinition(myDict->wordPairs[item]);
 			this->EnableUpdates();
 			break;			
