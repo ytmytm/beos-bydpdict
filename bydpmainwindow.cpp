@@ -243,6 +243,7 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			break;
 		case MSG_CLEAR_INPUT:
 			wordInput->SetText("");
+			wordInput->MakeFocus();
 			break;
 //		case MENU_SETTINGS:
 //			printf("menu settings\n");
