@@ -10,11 +10,11 @@ ydpDictionary::~ydpDictionary() {
 
 }
 
-const char* ydpDictionary::GetDefinition(int index) {
+void ydpDictionary::GetDefinition(int index) {
 	if (ReadDefinition(index) == 0) {
-		return ParseRTF();
+		ParseRTF();
 	} else {
-		return "error reading data file";
+		outputView->SetText("Error reading data file");
 	}
 }
 
@@ -69,6 +69,8 @@ void ydpDictionary::FillWordList(void) {
 
 	indexes = new unsigned long [wordCount+2];
 	words = new char* [wordCount+1];
+	wordPairs = new int [wordCount+1];
+
 	words[wordCount]=0;
 
 	// read index table offset
@@ -87,12 +89,6 @@ void ydpDictionary::FillWordList(void) {
 		fIndex.Read(words[current], fix32(index[0]) & 0xff);
 	} while (++current < wordCount);
 	// XXX poprawienie bledow w slowniku
-}
-
-int ydpDictionary::FindWord(const char *word) {
-	printf("searching for:%s\n", word);
-	// XXX fuzzy search with supplied similarity, insert into list view
-	return 2000;
 }
 
 int ydpDictionary::ReadDefinition(int index) {
@@ -114,11 +110,17 @@ int ydpDictionary::ReadDefinition(int index) {
 	return 0;
 }
 
-const char *ydpDictionary::ParseRTF(void) {
+//
+// parsuje rtf i od razu (via UpdateAttr) wstawia na wyjscie
+//
+void ydpDictionary::ParseRTF(void) {
 	char *def = (char*)curDefinition.String();
 	int level=0, attr=0, attrs[16], phon;
 
 	newline_=0; newattr=0; newphon=0;
+
+	textlen=0;
+	outputView->SetText("");
 
 	while(*def) {
 		switch(*def) {
@@ -140,20 +142,51 @@ const char *ydpDictionary::ParseRTF(void) {
 		}
 		def++;
 		if (newline_) {
-			parsedDefinition += line;
-			parsedDefinition += "\n";
-			newline_ = 0; line="";
+			line+="\n";
+			UpdateAttr(attr,newattr);
+			newline_ = 0;
 		}
 		attr = newattr;
 		phon = newphon;
 	}
 	UpdateAttr(attr, 0);
-
-	return parsedDefinition.String();
 }
 
+//
+// wstawia na koniec tekst z odpowiednimi parametrami
+// (parametr newattr jest zbedny)
+//
 void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
-	parsedDefinition += line;
+	printf("adding line, oldattr %i, newattr %i, line:%s:\n",oldattr,newattr,line.String());
+	if (line.Length() == 0)
+		return;
+	newattr = oldattr;
+	rgb_color colour;
+	BFont myfont(be_plain_font);
+//	myfont.SetEncoding(B_ISO_8859_2);
+	colour.red = colour.green = colour.blue = 0;
+
+	if (newattr & A_BOLD) {
+		myfont.SetFace(B_BOLD_FACE);
+	}
+	if (newattr & A_ITALIC) {
+		myfont.SetFace(B_ITALIC_FACE);
+	}
+	if (newattr & A_COLOR0) {
+		colour.red = colour.green = 0;
+		colour.blue = 255;
+	}
+	if (newattr & A_COLOR1) {
+		colour.red = 255;
+		colour.green = colour.blue = 0;
+	}
+	if (newattr & A_COLOR2) {
+		colour.green = 255;
+		colour.red = colour.blue = 0;
+	}
+	outputView->SetFontAndColor(&myfont,B_FONT_ALL,&colour);
+	outputView->Insert(textlen,line.String(),line.Length());
+	textlen+=line.Length();
 	line="";
 }
 
@@ -185,4 +218,76 @@ char* ydpDictionary::ParseToken(char *def) {
 
     def--;
     return def;
+}
+
+////////////////
+// search stuff below
+
+int ydpDictionary::FindWord(const char *word)
+{
+	printf("searching for:%s\n", word);
+	int i;
+
+    if ((wordCount<0) || (words == NULL))
+		return 0;
+
+	void *anItem;
+	printf("removing old data\n");
+	for (i=0; (anItem=dictList->ItemAt(i)); i++) {
+		printf("removing %i\n",i);
+		delete anItem;
+	}
+	dictList->MakeEmpty();
+    int distance = 3;
+    int cur = 0;
+    printf("searching for something\n");
+    for (i=0;i<wordCount;i++)
+//	if (editDistance(codec->fromUnicode(wordEdit->text()),wordList[i]) < distance)
+//	    listBox->insertItem(codec->toUnicode(wordList[i]));
+		if (editDistance(word,words[i]) < distance) {
+			dictList->AddItem(new BStringItem(words[i]));
+			wordPairs[cur] = i;
+			cur++;
+			if (cur>50)
+				return 0;
+		}
+	return 2000;
+}
+
+int ydpDictionary::min3(const int a, const int b, const int c)
+{
+    int min=a;
+    if (b<min) min = b;
+    if (c<min) min = c;
+    return min;
+}
+
+int ydpDictionary::editDistance(const char*slowo1, const char*slowo2)
+{
+    int *row0, *row1, *row;
+    int cost,i,j,m,n;
+
+    n = strlen(slowo1);
+    m = strlen(slowo2);
+
+    row0 = new int[n+1];
+    row1 = new int[n+1];
+
+    for (i=0;i<=n;i++)
+	row0[i] = i;
+
+    for (j=1;j<=m;j++) {
+	row1[0] = j;
+	for (i=1;i<=n;i++) {
+	    cost = (slowo1[i-1]==slowo2[j-1]) ? 0 : 1;
+	    row1[i] = min3(row0[i]+1,row1[i-1]+1,row0[i-1]+cost);
+	}
+	row = row0;
+	row0 = row1;
+	row1 = row;
+    }
+    cost = row0[n];
+    delete [] row0;
+    delete [] row1;
+    return cost;
 }

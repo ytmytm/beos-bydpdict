@@ -9,6 +9,7 @@
 #include <File.h>
 #include <TextView.h>
 #include <ListView.h>
+#include <Font.h>
 
 #define A_BOLD 1
 #define A_ITALIC 2
@@ -23,7 +24,7 @@
 			ydpDictionary(BTextView *output, BListView *dict);
 			~ydpDictionary();
 
-			const char* GetDefinition(int index);
+			void GetDefinition(int index);
 			int OpenDictionary(const char *index, const char *data);
 			int FindWord(const char *word);
 			void CloseDictionary(void);
@@ -31,9 +32,11 @@
 		private:
 			int ReadDefinition(int index);
 			void FillWordList(void);
-			const char* ParseRTF(void);
+			void ParseRTF(void);
 			void UpdateAttr(int oldattr, int newattr);
 			char *ParseToken(char *def);
+		    int min3(const int a, const int b, const int c);
+		    int editDistance(const char*slowo1, const char*slowo2);
 
 			// GUI data holders
 			BTextView *outputView;
@@ -42,13 +45,14 @@
 			BFile fIndex, fData;
 			int wordCount;
 			unsigned long *indexes;
+			int *wordPairs;
 			char **words;
 			BString curDefinition;
-			BString parsedDefinition;
 
 			// parser variables
 			char *def;
 			int newline_, newattr, newphon;
+			int textlen;
 			BString line;
 	};
 

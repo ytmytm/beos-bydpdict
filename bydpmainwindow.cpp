@@ -33,12 +33,12 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 
 	dictList = new BListView(
 		BRect(10,60,200,400), "listView", B_SINGLE_SELECTION_LIST);
-	dictList->AddItem(new BStringItem("item0"));
 	MainView->AddChild(new BScrollView("scollbar", dictList, B_FOLLOW_LEFT|B_FOLLOW_TOP, 0, false, true));
 
 	myDict = new ydpDictionary(outputView, dictList);
 	printf("about to open dictionary\n");
 	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict100.idx", "/boot/home/Desktop/beos/kydpdict/dict100.dat");
+	wordInput->MakeFocus(true);
 }
 
 BYdpMainWindow::~BYdpMainWindow() {
@@ -53,7 +53,7 @@ int result;
 			// niech to robi findword albo zwraca liste
 			result = myDict->FindWord(wordInput->Text());
 			printf("jest %i\n",result);
-			outputView->SetText(myDict->GetDefinition(result));
+			myDict->GetDefinition(result);
 			break;
 		default:
 			BWindow::MessageReceived(Message);
