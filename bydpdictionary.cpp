@@ -1,7 +1,7 @@
 
 #include "bydpdictionary.h"
 
-char *utf8_table[] = TABLE_UNICODE;
+char *utf8_table[] = TABLE_UTF8;
 
 ydpDictionary::ydpDictionary(BTextView *output, BListView *dict) {
 	outputView = output;
@@ -220,6 +220,52 @@ char *ydpDictionary::ConvertToUtf(BString line) {
 	return buf;
 }
 
+char *ydpDictionary::ConvertFromUtf(const char *input) {
+	static char buf[1024];
+	unsigned char *inp, *inp2;
+	memset(buf, 0, sizeof(buf));
+	int i,j,k;
+	unsigned char a,b;
+	bool notyet;
+
+	k=0;
+	// wez znak;
+	// dla kazdego z tabeli:
+	//		- porownaj znak z pierwszym
+	//		- te same: powownaj kolejny znak z drugim
+	//		- te same: wypisz indeks+128 i wyjdz z petli
+
+	inp = (unsigned char*)input;
+	inp2 = inp; inp2++;
+	for (; *inp; inp++, inp2++) {
+		a = *inp;
+		b = *inp2;
+		i=0;
+		notyet=true;
+		printf("char:%c\n",a);
+		while ((i<129) && (notyet)) {
+			if (a==utf8_table[i][0])
+				if (utf8_table[i][1]!=0) {
+					if (b==utf8_table[i][1])
+						notyet=false;
+				} else {
+					notyet=false;
+				}
+			i++;
+		}
+		if (notyet==false) {
+			printf("literal,i=%i\n",i);
+			buf[k]=a;
+		} else {
+			printf("from table,i=%i\n",i);
+			buf[k]=i+127;
+		}
+		k++;
+	}
+	buf[k]='\0';
+	return buf;
+}
+
 char* ydpDictionary::ParseToken(char *def) {
     char token[64];
     int tp;
@@ -256,6 +302,8 @@ char* ydpDictionary::ParseToken(char *def) {
 int ydpDictionary::FuzzyFindWord(const char *word)
 {
 	int i, numFound, best, score, hiscore;
+
+	printf("result:%s\n",ConvertFromUtf("ciążańebióśka"));
 
     if ((wordCount<0) || (words == NULL))
 		return -1;

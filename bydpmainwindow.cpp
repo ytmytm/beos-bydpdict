@@ -13,11 +13,8 @@
 //		- beginswith
 //			- liste wypelnic tylko raz? przy przelaczeniu typu szukania?
 //	- konwersja znakow
-//		- duże Ś i duże Ż nieobecne (są kropki)
+//		- w nowej tabeli duże ź nieobecne (jest kropka)
 //		- wordinput przed szukaniem (utf8->cp1250)
-//			- beosowe nie dziala, zrobic wlasny zrzut (tylko litery)
-//			- wziac tabelke utf16 i przekonwertowac na utf8, uzywac do
-//			  kodowania w obie storny
 //	- klasa config do trzymania konfiguracji
 //	- cos do szybkiego czyszczenia inputboksa (ESC?)
 //	- geometria jakos sensowniej (jest niezle, refinement)
@@ -66,7 +63,7 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 
 	myDict = new ydpDictionary(outputView, dictList);
 	printf("about to open dictionary\n");
-	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict101.idx", "/boot/home/Desktop/beos/kydpdict/dict101.dat");
+	myDict->OpenDictionary("/boot/home/Desktop/beos/kydpdict/dict100.idx", "/boot/home/Desktop/beos/kydpdict/dict100.dat");
 	wordInput->SetText("A");
 	wordInput->MakeFocus(true);
 }
