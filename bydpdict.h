@@ -11,7 +11,6 @@ class BYdpApp : public BApplication {
 		BYdpApp();
 		~BYdpApp();
 		virtual void ReadyToRun();
-//		virtual void MessageReceived(BMessage *message);
 	private:
 		BYdpMainWindow *myMainWindow;
 };

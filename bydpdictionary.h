@@ -23,6 +23,7 @@
 			ydpDictionary(BTextView *output, BListView *dict, bydpConfig *config);
 			~ydpDictionary();
 
+			void ReGetDefinition(int index);
 			void GetDefinition(int index);
 			int OpenDictionary(const char *index, const char *data);
 			int OpenDictionary(void);
@@ -68,7 +69,7 @@
 				char **words;
 				unsigned long *indexes;
 			} dictCache[2];
-			int lastresult, lastIndex;
+			int lastIndex;
 			bool dictionaryReady;
 
 			// parser variables

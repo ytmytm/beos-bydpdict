@@ -48,7 +48,7 @@ void ydpDictionary::GetDefinition(int index) {
 	if (ReadDefinition(index) == 0) {
 		ParseRTF();
 	} else {
-		outputView->SetText("Error reading data file");
+		outputView->SetText("Błąd przy odczycie pliku danych!");
 	}
 }
 
@@ -56,11 +56,11 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 	int i;
 
 	if ((fIndex.SetTo(index, B_READ_ONLY)) != B_OK) {
-		printf ("error opening index\n");
+		outputView->SetText("Błąd przy otwieraniu pliku indeksu!");
 		return -1;
 	}
 	if ((fData.SetTo(data, B_READ_ONLY)) != B_OK) {
-		printf ("error opening data\n");
+		outputView->SetText("Błąd przy otwieraniu pliku danych!");
 		return -1;
 	}
 
@@ -76,7 +76,6 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 		dictCache[i].indexes = indexes;
 		dictCache[i].words = words;
 	}
-	lastresult = -1;
 	lastIndex = -1;
 	dictionaryReady = true;
 	return 0;
@@ -121,7 +120,7 @@ void ydpDictionary::FillWordList(void) {
 	fIndex.Seek(0x08, SEEK_SET);
 	fIndex.Read(&wcount, 2);
 	wordCount = (int)fix16(wcount);
-	printf("have %i words\n",wordCount);
+//	printf("have %i words\n",wordCount);
 
 	indexes = new unsigned long [wordCount+2];
 	words = new char* [wordCount+2];
@@ -145,7 +144,7 @@ void ydpDictionary::FillWordList(void) {
 }
 
 int ydpDictionary::ReadDefinition(int index) {
-	printf("reading definition %i\n", index);
+//	printf("reading definition %i\n", index);
 	unsigned long dsize, size;
 	char *def;
 
@@ -367,9 +366,6 @@ int ydpDictionary::FindWord(const char *wordin)
 		case SEARCH_BEGINS:
 		default:
 			result = BeginsFindWord(wordin);
-			if (lastresult == result)
-				return result;
-			lastresult = result;
 			ClearWordList();
 			j = 0;
 			i = result-(cnf->todisplay/2-1); if (i<0) i=0;
@@ -389,7 +385,6 @@ int ydpDictionary::ScoreWord(const char *w1, const char *w2) {
 	int len2 = strlen(w2);
 	for (; ((i<len1) && (i<len2)); i++)
 		if (tolower(w1[i])!=tolower(w2[i]))
-//		if (w1[i]!=w2[i])
 			break;
 	return i;
 }
@@ -407,17 +402,6 @@ int ydpDictionary::BeginsFindWord(const char *wordin) {
 	}
 	return maxitem;
 }
-
-/// XXX this is probably unused
-//void ydpDictionary::FullFillList(void) {
-//	int i;
-//	for (i=0;i<wordCount;i++) {
-//		if ((i % 500)==0)
-//			printf("adding %i\n",i);
-//		dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
-//		wordPairs[i]=i;
-//	}
-//}
 
 void ydpDictionary::ClearWordList(void) {
 	int i;
@@ -452,8 +436,6 @@ int ydpDictionary::FuzzyFindWord(const char *wordin)
 				best = i;
 				hiscore = score;
 			}
-//			if (numFound>50)		// XXX z glowy! potrzeba jesli distance >2
-//				return best;
 		}
 	return best;
 }

@@ -144,13 +144,11 @@ void bydpConfig::save(void) {
 }
 
 void bydpConfig::setDefaultConfiguration(void) {
-//	topPath = "/boot/home/Desktop/beos/kydpdict/";
-	topPath = "/boot/home/Desktop/beos/";
+	topPath = "/boot/home/Desktop/";
 	toPolish = true;
 	clipboardTracking = true;
 	setFocusOnSelf = true;
 	searchmode = SEARCH_BEGINS;
-//	searchmode = SEARCH_FUZZY;
 	distance = 3;
 	todisplay = 23;
 

@@ -1,7 +1,6 @@
 
 #include "bydpconfigure.h"
-//#include "bydpmainwindow.h"
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <Button.h>
 #include <StringView.h>
@@ -14,7 +13,7 @@ bydpConfigure::bydpConfigure(const char *title, void *par) : BWindow(
 		BRect(62, 100, 62+370, 260),
 		title,
 		B_TITLED_WINDOW,
-		0 ) {
+		B_NOT_RESIZABLE ) {
 
 	parent = par;
 	myColour = -1;
@@ -77,9 +76,9 @@ void bydpConfigure::UpdateExampleColour(void) {
 }
 
 void bydpConfigure::ConfigUpdate(void) {
-	printf("update config in dialog\n");
+//	printf("update config in dialog\n");
 	if (myColour > -1) {
-		printf("update colour %i\n",myColour);
+//		printf("update colour %i\n",myColour);
 		switch(myColour) {
 			case 0:
 				CopyNewColours(&myConfig->colour);
@@ -105,16 +104,16 @@ void bydpConfigure::MessageReceived(BMessage * Message)
 	switch(Message->what)
 	{
 		case BUTTON_OK:
-			printf("ok\n");
+//			printf("ok\n");
 			ConfigUpdate();
 			QuitRequested();
 			break;
 		case BUTTON_CANCEL:
-			printf("cancel\n");
+//			printf("cancel\n");
 			QuitRequested();
 			break;
 		case CCOLOR_MSG:
-			printf("color msg\n");
+//			printf("color msg\n");
 			UpdateExampleColour();
 			break;
 		default:

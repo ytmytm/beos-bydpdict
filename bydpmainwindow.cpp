@@ -1,9 +1,7 @@
 //
 // TODO (w porzadku waznosci):
-//	- geometria jakos sensowniej (jest niezle, refinement, po prawej stronie i line)
-//	- usunac printfy przed release
-//	- usunac zakomentowane rzeczy (jednorazowa operacja, zeby trafilo do cvs)
 // LATER:
+//	- cos chyba nie tak z AOGONEK
 //	- opcja do ustawiania distance (raczej suwak niz liczba)
 //	- nie ma odswiezenia outputView po zmianie kolorow (jakos to sie pieprzy)
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
@@ -22,7 +20,6 @@
 #include <MenuBar.h>
 #include <Path.h>
 #include <Clipboard.h>
-#include <stdio.h>
 
 const uint32 MSG_MODIFIED_INPUT =	'MInp';	// wpisanie litery
 const uint32 MSG_LIST_SELECTED =	'LSel'; // klik na liscie
@@ -44,7 +41,7 @@ const uint32 MENU_CLIP =			'MCli';
 const uint32 MENU_FOCUS =			'MFoc';
 
 BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
-	BRect(64, 64, 600, 480), windowTitle, B_TITLED_WINDOW, 0 ) {
+	BRect(64, 64, 585, 480), windowTitle, B_TITLED_WINDOW, B_OUTLINE_RESIZE ) {
 
 	BView *MainView(
 		new BView(BWindow::Bounds(), NULL, B_FOLLOW_ALL, 0) );
@@ -61,12 +58,12 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	MainView->SetViewColor(ui_color(B_PANEL_BACKGROUND_COLOR));
 	BWindow::AddChild(MainView);
 	wordInput = new BTextControl(
-		BRect(10,20,200,45), "wordInput", NULL, "text", new BMessage(MSG_MODIFIED_INPUT));
+		BRect(5,24,210,45), "wordInput", NULL, "text", new BMessage(MSG_MODIFIED_INPUT));
 	wordInput->SetModificationMessage(new BMessage(MSG_MODIFIED_INPUT));
 	MainView->AddChild(wordInput);
 
 	outputView = new BTextView(
-		BRect(220,20,500,400), "outputView", BRect(10,10,300,200), B_FOLLOW_LEFT_RIGHT|B_FOLLOW_TOP_BOTTOM, B_WILL_DRAW|B_PULSE_NEEDED);
+		BRect(220,24,500,400), "outputView", BRect(10,10,300,200), B_FOLLOW_LEFT_RIGHT|B_FOLLOW_TOP_BOTTOM, B_WILL_DRAW|B_PULSE_NEEDED);
 	outputView->SetText("output");
 	outputView->MakeEditable(false);
 	outputView->SetStylable(true);
@@ -143,7 +140,7 @@ void BYdpMainWindow::NewClipData(void) {
 		wordInput->SetText(result.String());
 		if (config->setFocusOnSelf)
 			this->Activate();
-		printf("got:%s:clip\n",result.String());
+//		printf("got:%s:clip\n",result.String());
 	}
 }
 
@@ -154,7 +151,7 @@ void BYdpMainWindow::HandleModifiedInput(bool force) {
 	}
 	lastinput = wordInput->Text();
 	int item = myDict->FindWord(lastinput.String());
-	printf("new input %s\n",lastinput.String());
+//	printf("new input %s\n",lastinput.String());
 	myDict->GetDefinition(item);
 }
 
@@ -177,22 +174,8 @@ void BYdpMainWindow::UpdateLanguages(bool newlang) {
 	HandleModifiedInput(true);
 }
 
-/// unused
-///void BYdpMainWindow::ConfigDialog(void) {
-///	myDialog = new bydpConfigure("Ustawienia", this);
-///	myDialog->Show();
-///}
-
-/// XXX callback from ydpConfigure, but dumps core...
-//void BYdpMainWindow::ConfigUpdate(void) {
-//	printf("update config - redraw stuff\n");
-//	myDict->ReGetDefinition();
-//	HandleModifiedInput(true);
-//	outputView->Invalidate();
-//}
-
 void BYdpMainWindow::ConfigColour(int number) {
-	printf("configure colour %i\n", number);
+//	printf("configure colour %i\n", number);
 	myDialog = new bydpConfigure("Ustawienie kolorów", this);
 	myDialog->SetConfig(config);
 	myDialog->SetupColourDialog(number);
@@ -200,12 +183,12 @@ void BYdpMainWindow::ConfigColour(int number) {
 }
 
 void BYdpMainWindow::TryToOpenDict(void) {
-	printf("about to reopen dict\n");
+//	printf("about to reopen dict\n");
 	if (myDict->OpenDictionary() < 0) {
-		printf("failed\n");
+//		printf("failed\n");
 		ConfigPath();
 	} else {
-		printf("success\n");
+//		printf("success\n");
 		firstStart = false;
 		wordInput->SetText("A");
 		this->Show();
@@ -213,7 +196,7 @@ void BYdpMainWindow::TryToOpenDict(void) {
 }
 
 void BYdpMainWindow::ConfigPath(void) {
-	printf("configure path\n");
+//	printf("configure path\n");
 	BMessenger mesg(this);
 	myPanel = new BFilePanel(B_OPEN_PANEL,
 			&mesg, NULL, B_DIRECTORY_NODE, false, NULL, NULL, true, true);
@@ -232,7 +215,7 @@ void BYdpMainWindow::RefsReceived(BMessage *Message) {
 		BPath path;
 		BEntry myEntry(&ref);
 		myEntry.GetPath(&path);
-		printf("got new path %s\n", path.Path());
+//		printf("got new path %s\n", path.Path());
 		config->topPath = path.Path();
 		config->save();
 		TryToOpenDict();
@@ -266,15 +249,15 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 //			ConfigDialog();
 //			break;
 		case MENU_ENG2POL:
-			printf("eng2pol\n");
+//			printf("eng2pol\n");
 			UpdateLanguages(true);
 			break;
 		case MENU_POL2ENG:
-			printf("pol2eng\n");
+//			printf("pol2eng\n");
 			UpdateLanguages(false);
 			break;
 		case MENU_SWITCH:
-			printf("menu switch\n");
+//			printf("menu switch\n");
 			UpdateLanguages(!config->toPolish);
 			break;
 		case MENU_FUZZY:
@@ -321,7 +304,7 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			RefsReceived(Message);
 			break;
 		case B_CANCEL:
-			printf("canceled\n");
+//			printf("canceled\n");
 			if (firstStart)
 				QuitRequested();
 			else
@@ -350,5 +333,7 @@ void BYdpMainWindow::FrameResized(float width, float height) {
 	spacefor = (int)(dictSize/itemSize-2);
 	if (spacefor<1) spacefor = 1;
 	config->todisplay = spacefor;
-	printf("spacefor: %i\n",spacefor);
+//	printf("spacefor: %i\n",spacefor);
+	if (config->searchmode == SEARCH_BEGINS)
+		HandleModifiedInput(true);
 }
