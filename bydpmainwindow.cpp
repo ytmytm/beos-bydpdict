@@ -135,6 +135,7 @@ void BYdpMainWindow::NewClipData(void) {
 			clip->FindData("text/plain", B_MIME_TYPE,(const void **)&text, &textLen);
 		be_clipboard->Unlock();
 		result.SetTo(text,textLen);
+		result.RemoveSet(" ");
 		wordInput->SetText(result.String());
 		if (config->setFocusOnSelf)
 			this->Activate();
