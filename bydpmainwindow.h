@@ -9,6 +9,7 @@
 	#include <TextView.h>
 	#include <ListView.h>
 	#include <MenuItem.h>
+	#include <FilePanel.h>
 	#include "globals.h"
 	#include "bydpconfig.h"
 	#include "bydpconfigure.h"
@@ -29,6 +30,7 @@
 			void ConfigDialog(void);
 			void ConfigPath(void);
 			void ConfigColour(int number);
+			void TryToOpenDict(void);
 			BTextView *outputView;
 			BTextControl *wordInput;
 			BListView *dictList;
@@ -37,6 +39,9 @@
 			ydpDictionary *myDict;
 			bydpConfig *config;
 			bydpConfigure *myDialog;
+
+			BFilePanel *myPanel;
+			bool firstStart;
 
 	};
 

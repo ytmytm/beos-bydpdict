@@ -14,12 +14,12 @@
 //	- todisplay obliczane jakos samodzielnie?
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
+//	- zapis/odczyt pliku konfiguracyjnego $HOME/config/.bydpdict
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>
 #include <Menu.h>
 #include <MenuBar.h>
-#include <FilePanel.h>
 #include <Path.h>
 #include <stdio.h>
 
@@ -83,11 +83,6 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	menu->AddItem(new BMenuItem("Zakończ", new BMessage(B_QUIT_REQUESTED), 'Z'));
 	menubar->AddItem(menu);
 
-//	BMenu *konfig;
-//	menu = new BMenu("Ustawienia");
-//	menu->AddItem(new BMenuItem("Konfiguracja", new BMessage(MENU_SETTINGS), 'K'));
-//	menu->AddItem(konfig = new BMenu("Konfiguracja");
-//	menu->AddSeparatorItem();
 	menu = new BMenu("Język");
 	menu->AddItem(new BMenuItem("Przełącz język", new BMessage(MENU_SWITCH), 'J'));
 	menu->AddItem(menuEng = new BMenuItem("Eng -> Pol", new BMessage(MENU_ENG2POL), 'E'));
@@ -110,16 +105,10 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 
 	config = new bydpConfig();
 	myDict = new ydpDictionary(outputView, dictList, config);
-	printf("about to open dictionary\n");
-	if (myDict->OpenDictionary() < 0) {
-		printf("error opening dictionary\n");
-		ConfigPath();	// configure path and try again later
-	} else {
-		wordInput->SetText("A");
-		this->Show();
-	}
 	UpdateMenus();
 	wordInput->MakeFocus(true);
+	firstStart = true;
+	TryToOpenDict();
 }
 
 BYdpMainWindow::~BYdpMainWindow() {
@@ -165,10 +154,23 @@ void BYdpMainWindow::ConfigColour(int number) {
 	printf("configure colour %i\n", number);
 }
 
+void BYdpMainWindow::TryToOpenDict(void) {
+	printf("about to reopen dict\n");
+	if (myDict->OpenDictionary() < 0) {
+		printf("failed\n");
+		ConfigPath();
+	} else {
+		printf("success\n");
+		firstStart = false;
+		wordInput->SetText("A");
+		this->Show();
+	}
+}
+
 void BYdpMainWindow::ConfigPath(void) {
 	printf("configure path\n");
 	BMessenger mesg(this);
-	BFilePanel *myPanel = new BFilePanel(B_OPEN_PANEL,
+	myPanel = new BFilePanel(B_OPEN_PANEL,
 			&mesg, NULL, B_DIRECTORY_NODE, false, NULL, NULL, true, true);
 	myPanel->Show();
 	myPanel->Window()->SetTitle("Podaj katalog z plikami słownika");
@@ -181,25 +183,16 @@ void BYdpMainWindow::RefsReceived(BMessage *Message) {
 	ref_num = 0;
 	do {
 		if ((err = Message->FindRef("refs", ref_num, &ref)) != B_OK)
-			goto skip;
+			return;
 		BPath path;
 		BEntry myEntry(&ref);
 		myEntry.GetPath(&path);
 		printf("got new path %s\n", path.Path());
 		config->topPath = path.Path();
 		config->save();
+		TryToOpenDict();
 		ref_num++;
 	} while (1);
-skip:
-	printf("about to reopen dict\n");
-	if (myDict->OpenDictionary() < 0) {
-		printf("failed\n");
-		ConfigPath();
-	} else {
-		printf("success\n");
-		wordInput->SetText("A");
-		this->Show();
-	}
 }
 
 void BYdpMainWindow::MessageReceived(BMessage *Message) {
@@ -266,9 +259,12 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 		case B_REFS_RECEIVED:
 			RefsReceived(Message);
 			break;
-//		case B_CANCEL:
-//			printf("canceled\n");
-//			QuitRequested();
+		case B_CANCEL:
+			printf("canceled\n");
+			if (firstStart)
+				QuitRequested();
+			else
+				delete myPanel;
 //			break;
 		default:
 			BWindow::MessageReceived(Message);
