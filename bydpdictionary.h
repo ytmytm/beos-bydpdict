@@ -1,4 +1,3 @@
-// poprawiony AOGONEK
 
 #ifndef _BYDPDICTIONARY_H
 #define _BYDPDICTIONARY_H
