@@ -3,8 +3,11 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <Alert.h>
+#include <SpLocaleApp.h>
+#include "globals.h"
 
-ydpDictionary::ydpDictionary(BTextView *output, BListView *dict, bydpConfig *config) {
+ydpDictionary::ydpDictionary(BTextView *output, bydpListView *dict, bydpConfig *config) {
 	int i;
 
 	outputView = output;
@@ -18,6 +21,7 @@ ydpDictionary::ydpDictionary(BTextView *output, BListView *dict, bydpConfig *con
 		dictCache[i].indexes = NULL;
 		dictCache[i].words = NULL;
 	}
+	fuzzyWordCount = -1;
 }
 
 ydpDictionary::~ydpDictionary() {
@@ -25,19 +29,30 @@ ydpDictionary::~ydpDictionary() {
 
 	for (i=0;i<1;i++) {
 		if (dictCache[i].wordCount>0) {
-			if (dictCache[i].indexes) delete [] dictCache[i].indexes;
 			if (dictCache[i].words) {
-				for (j=0;j<dictCache[i].wordCount;j++)
+			if (dictCache[i].indexes) delete [] dictCache[i].indexes;
+				for (j=0;j<dictCache[i].wordCount;j++) {
 					delete [] dictCache[i].words[j];
+				}
 				delete [] dictCache[i].words;
 			}
 		}
 	}
 }
 
+void ydpDictionary::ReGetDefinition(void) {
+	if (ReadDefinition(lastIndex) == 0) {
+		ParseRTF();
+	} else {
+		BAlert *alert = new BAlert(APP_NAME, tr("Data file read error."), tr("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		alert->Go();
+	}
+}
+
 void ydpDictionary::GetDefinition(int index) {
 	if (!dictionaryReady) {
-		outputView->SetText("Proszƒô skonfigurowaƒá ≈õcie≈ºkƒô dostƒôpu do plik√≥w s≈Çownika.\n");
+		BAlert *alert = new BAlert(APP_NAME, tr("Please setup path to dictionary files."), tr("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		alert->Go();
 		return;
 	}
 	if (index < 0)
@@ -48,19 +63,31 @@ void ydpDictionary::GetDefinition(int index) {
 	if (ReadDefinition(index) == 0) {
 		ParseRTF();
 	} else {
-		outputView->SetText("B≈ÇƒÖd przy odczycie pliku danych!");
+		BAlert *alert = new BAlert(APP_NAME, tr("Data file read error."), tr("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		alert->Go();
 	}
 }
 
-int ydpDictionary::OpenDictionary(const char *index, const char *data) {
+int ydpDictionary::OpenDictionary(void) {
 	int i;
+	BString dat;
+	BString idx;
 
-	if ((fIndex.SetTo(index, B_READ_ONLY)) != B_OK) {
-		outputView->SetText("B≈ÇƒÖd przy otwieraniu pliku indeksu!");
+	dat = cnf->topPath;
+	dat.Append("/");
+	dat += cnf->dataFName;
+	idx = cnf->topPath;
+	idx.Append("/");
+	idx += cnf->indexFName;
+
+	if ((fIndex.SetTo(idx.String(), B_READ_ONLY)) != B_OK) {
+		BAlert *alert = new BAlert(APP_NAME, tr("Couldn't open index file."), tr("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		alert->Go();
 		return -1;
 	}
-	if ((fData.SetTo(data, B_READ_ONLY)) != B_OK) {
-		outputView->SetText("B≈ÇƒÖd przy otwieraniu pliku danych!");
+	if ((fData.SetTo(dat.String(), B_READ_ONLY)) != B_OK) {
+		BAlert *alert = new BAlert(APP_NAME, tr("Couldn't open data file."), tr("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		alert->Go();
 		return -1;
 	}
 
@@ -70,33 +97,26 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 		wordCount = dictCache[i].wordCount;
 		indexes = dictCache[i].indexes;
 		words = dictCache[i].words;
+		delete [] wordPairs;
+		delete [] fuzzyWords;
 	} else {
 		FillWordList();
 		dictCache[i].wordCount = wordCount;
 		dictCache[i].indexes = indexes;
 		dictCache[i].words = words;
 	}
+	wordPairs = new int [wordCount];
+	fuzzyWords = new char* [wordCount];
+
 	lastIndex = -1;
 	dictionaryReady = true;
 	return 0;
 }
 
-int ydpDictionary::OpenDictionary(void) {
-	BString idx, dat;
-
-	idx = cnf->topPath;
-	idx.Append("/");
-	idx += cnf->indexFName;
-	dat = cnf->topPath;
-	dat.Append("/");
-	dat += cnf->dataFName;
-	return OpenDictionary(idx.String(),dat.String());
-}
-
 void ydpDictionary::CloseDictionary(void) {
 	fIndex.Unset();
 	fData.Unset();
-	ClearWordList();
+	ClearFuzzyWordList();
 }
 
 unsigned int fix32(unsigned int x) {
@@ -120,11 +140,9 @@ void ydpDictionary::FillWordList(void) {
 	fIndex.Seek(0x08, SEEK_SET);
 	fIndex.Read(&wcount, 2);
 	wordCount = (int)fix16(wcount);
-//	printf("have %i words\n",wordCount);
 
 	indexes = new unsigned long [wordCount+2];
 	words = new char* [wordCount+2];
-	wordPairs = new int [wordCount+2];
 
 	words[wordCount]=0;
 
@@ -140,11 +158,10 @@ void ydpDictionary::FillWordList(void) {
 		words[current] = new char [fix32(index[0]) & 0xff];
 		fIndex.Read(words[current], fix32(index[0]) & 0xff);
 	} while (++current < wordCount);
-	// XXX poprawienie bledow w slowniku
+	// XXX fix dictionary index errors (Provencial?)
 }
 
 int ydpDictionary::ReadDefinition(int index) {
-//	printf("reading definition %i\n", index);
 	unsigned long dsize, size;
 	char *def;
 
@@ -156,17 +173,16 @@ int ydpDictionary::ReadDefinition(int index) {
 	def = new char [dsize+1];
 	if ((size = fData.Read(def,dsize)) != dsize) return -1;
 	def[size] = 0;
-	curDefinition.SetTo(def);
 
-	delete [] def;
+	if (curDefinition) delete [] curDefinition;
+	curDefinition = def;
 	return 0;
 }
 
 //
-// parsuje rtf i od razu (via UpdateAttr) wstawia na wyjscie
-//
+// parses format and (via UpdateAttr and convert) outputs data
 void ydpDictionary::ParseRTF(void) {
-	char *def = (char*)curDefinition.String();
+	char *def = curDefinition;
 	int level=0, attr=0, attrs[16], phon;
 
 	newline_=0; newattr=0; newphon=0;
@@ -181,12 +197,12 @@ void ydpDictionary::ParseRTF(void) {
 				break;
 			case '\\':
 				def = ParseToken(def);
-				UpdateAttr(attr, newattr);
+				UpdateAttr(attr);
 				attr = newattr;
 				break;
 			case '}':
 				newattr = attrs[--level];
-				UpdateAttr(attr, newattr);
+				UpdateAttr(attr);
 				break;
 			default:
 				line += *def;
@@ -198,23 +214,22 @@ void ydpDictionary::ParseRTF(void) {
 				line.Prepend("\t\t",2);
 			}
 			line.Append("\n",1);
-			UpdateAttr(attr,newattr);
+			UpdateAttr(attr);
 			newline_ = 0;
 		}
 		attr = newattr;
 		phon = newphon;
 	}
-	UpdateAttr(attr, 0);
+	UpdateAttr(attr);
 }
 
 //
-// wstawia na koniec tekst z odpowiednimi parametrami
-void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
+// appends 'line' to output widget with proper attributes
+void ydpDictionary::UpdateAttr(int newattr) {
 	if (line.Length() == 0)
 		return;
-	newattr = oldattr;
 	rgb_color *colour;
-	BFont myfont(be_plain_font);
+	BFont myfont = cnf->currentFont;
 	colour = &cnf->colour;
 	if (newattr & A_SUPER) {
 		myfont.SetSize(10.0);
@@ -235,7 +250,7 @@ void ydpDictionary::UpdateAttr(int oldattr, int newattr) {
 		colour = &cnf->colour2;
 	}
 	outputView->SetFontAndColor(&myfont,B_FONT_ALL,colour);
-	line = ConvertToUtf(line);
+	line = ConvertToUtf(line.String());
 	outputView->Insert(textlen,line.String(),line.Length());
 	textlen+=line.Length();
 	line="";
@@ -271,88 +286,14 @@ char* ydpDictionary::ParseToken(char *def) {
     return def;
 }
 
-/////////////////////
-// utf8 <-> cp1250 convertion stuff below
-//
-
-const char *utf8_table[] = TABLE_UTF8;
-const char upper_cp[] = "A•BC∆DE FGHIJKL£MN—O”PQRSåTUVWXYZØè";
-const char lower_cp[] = "aπbcÊdeÍfghijkl≥mnÒoÛpqrsútuvwxyzøü";
-
-char ydpDictionary::tolower(const char c) {
-    unsigned int i;
-    for (i=0;i<sizeof(upper_cp);i++)
-	if (c == upper_cp[i])
-	    return lower_cp[i];
-    return c;
-}
-
-char *ydpDictionary::ConvertToUtf(BString line) {
-	static char buf[1024];
-	static char letter[2] = "\0";
-	unsigned char *inp;
-	memset(buf, 0, sizeof(buf));
-
-	inp = (unsigned char *)line.String();
-	for (; *inp; inp++) {
-		if (*inp > 126) {
-			strncat(buf, utf8_table[*inp - 127], sizeof(buf) - strlen(buf) - 1);
-		} else {
-			letter[0] = *inp;
-			strncat(buf, letter, sizeof(buf) - strlen(buf) - 1);
-		}
-	}
-	return buf;
-}
-
-char *ydpDictionary::ConvertFromUtf(const char *input) {
-	static char buf[1024];
-	unsigned char *inp, *inp2;
-	memset(buf, 0, sizeof(buf));
-	int i,k;
-	char a,b;
-	bool notyet;
-
-	k=0;
-	inp = (unsigned char*)input;
-	inp2 = inp; inp2++;
-	for (; *inp; inp++, inp2++) {
-		a = *inp;
-		b = *inp2;
-		i=0;
-		notyet=true;
-		while ((i<129) && (notyet)) {
-			if (a==utf8_table[i][0]) {
-				if (utf8_table[i][1]!=0) {
-					if (b==utf8_table[i][1]) {
-						inp++;
-						inp2++;
-						notyet=false;
-					}
-				} else {
-					notyet=false;
-				}
-			}
-			i++;
-		}
-		if (notyet)
-			buf[k]=a;
-		else
-			buf[k]=i+126;
-		k++;
-	}
-	buf[k]='\0';
-	return buf;
-}
-
 ////////////////
 // search stuff below
 
 int ydpDictionary::FindWord(const char *wordin) {
-	int result,i,j;
+	int result,i;
 
 	if (!dictionaryReady) {
-		outputView->SetText("Proszƒô skonfigurowaƒá ≈õcie≈ºkƒô dostƒôpu do plik√≥w s≈Çownika.\n");
+		outputView->SetText(tr("Please setup path to dictionary files."));
 		return -1;
 	}
 
@@ -363,14 +304,8 @@ int ydpDictionary::FindWord(const char *wordin) {
 		case SEARCH_BEGINS:
 		default:
 			result = BeginsFindWord(wordin);
-			ClearWordList();
-			j = 0;
-			i = result-(cnf->todisplay/2-1); if (i<0) i=0;
-			for (;(i<wordCount) && (j<cnf->todisplay);i++) {
-				dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
-				wordPairs[j]=i;
-				j++;
-			}
+			for (i=0;i<wordCount;i++) wordPairs[i]=i;
+			dictList->NewData(wordCount,words,result);
 			return result;
 			break;
 	}
@@ -400,12 +335,12 @@ int ydpDictionary::BeginsFindWord(const char *wordin) {
 	return maxitem;
 }
 
-void ydpDictionary::ClearWordList(void) {
+void ydpDictionary::ClearFuzzyWordList(void) {
 	int i;
-	void *anItem;
-	for (i=0; (anItem=dictList->ItemAt(i)); i++)
-		delete anItem;
-	dictList->MakeEmpty();
+	if (fuzzyWordCount>0)
+		for (i=0;i<fuzzyWordCount;i++)
+			delete [] fuzzyWords[i];
+	fuzzyWordCount = 0;
 }
 
 int ydpDictionary::FuzzyFindWord(const char *wordin) {
@@ -418,14 +353,15 @@ int ydpDictionary::FuzzyFindWord(const char *wordin) {
 
 	char *word = ConvertFromUtf(wordin);
 
-	ClearWordList();
+	ClearFuzzyWordList();
 
     numFound = 0;
     best = 0;
     hiscore = cnf->distance;
     for (i=0;i<wordCount;i++)
 		if ((score=editDistance(word,words[i])) < cnf->distance) {
-			dictList->AddItem(new BStringItem(ConvertToUtf(words[i])));
+			fuzzyWords[numFound] = new char [strlen(words[i])+1];
+			strcpy(fuzzyWords[numFound],words[i]);
 			wordPairs[numFound] = i;
 			numFound++;
 			if (score<hiscore) {
@@ -433,6 +369,8 @@ int ydpDictionary::FuzzyFindWord(const char *wordin) {
 				hiscore = score;
 			}
 		}
+	fuzzyWordCount = numFound;
+	dictList->NewData(fuzzyWordCount,fuzzyWords,best);
 	return best;
 }
 
@@ -456,12 +394,13 @@ int ydpDictionary::editDistance(const char*slowo1, const char*slowo2) {
 	row1 = rowy;
 
 	for (i=0;i<=n;i++)
-	row0[i] = i;
+		row0[i] = i;
 
 	for (j=1;j<=m;j++) {
 		row1[0] = j;
 		for (i=1;i<=n;i++) {
 			cost = (slowo1[i-1]==slowo2[j-1]) ? 0 : 1;
+//			cost = (tolower(slowo1[i-1])==tolower(slowo2[j-1])) ? 0 : 1; /// za wolno!!!
 			row1[i] = min3(row0[i]+1,row1[i-1]+1,row0[i-1]+cost);
 		}
 		row = row0;

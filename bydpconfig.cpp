@@ -1,7 +1,10 @@
 
-#include "bydpconfig.h"
-#include <stdio.h>
 #include <stdlib.h>
+#include <Path.h>
+#include <Alert.h>
+#include <SpLocaleApp.h>
+#include "globals.h"
+#include "bydpconfig.h"
 
 bydpConfig::bydpConfig() {
 	load();
@@ -57,15 +60,54 @@ void bydpConfig::readValue(const char *buf, const char *token, bool *result) {
 		*result = (!strcmp(res,"true"));
 }
 
+void bydpConfig::readValue(const char *buf, const char *token, BFont *result) {
+	BString tmp;
+	char *res;
+	int size;
+
+	tmp = token;
+	tmp += ".family=";
+	res = readValue(buf,tmp.String());
+	result->SetFamilyAndStyle(res,NULL);
+	tmp = token;
+	tmp += ".style=";
+	res = readValue(buf,tmp.String());
+	result->SetFamilyAndStyle(NULL,res);
+	tmp = token;
+	tmp += ".size=";
+	readValue(buf,tmp.String(),&size);
+	result->SetSize(size);
+}
+
+void bydpConfig::readValue(const char *buf, const char *token, BRect *result) {
+	BString tmp;
+	int pos;
+	tmp = token;
+	tmp += ".top=";
+	readValue(buf,tmp.String(),&pos);
+	result->top = pos;
+	tmp = token;
+	tmp += ".bottom=";
+	readValue(buf,tmp.String(),&pos);
+	result->bottom = pos;
+	tmp = token;
+	tmp += ".left=";
+	readValue(buf,tmp.String(),&pos);
+	result->left = pos;
+	tmp = token;
+	tmp += ".right=";
+	readValue(buf,tmp.String(),&pos);
+	result->right = pos;
+}
+
 void bydpConfig::load(void) {
 	static char buf[1024];
 	char *result;
 
 	setDefaultConfiguration();
-	if (conf.SetTo(CONFIG_NAME,B_READ_ONLY) != B_OK) {
-		printf("error opening config file for load\n");
+	if (conf.SetTo(CONFIG_NAME,B_READ_ONLY) != B_OK)
 		return;
-	}
+
 	memset(buf,0,sizeof(buf));
 	conf.Read(buf,sizeof(buf)-1);
 	conf.Unset();
@@ -76,11 +118,12 @@ void bydpConfig::load(void) {
 	readValue(buf,"setFocusOnSelf=",&setFocusOnSelf);
 	readValue(buf,"distance=",&distance);
 	readValue(buf,"searchmode=",&searchmode);
-	readValue(buf,"todisplay=",&todisplay);
 	readValue(buf,"colour",&colour);
 	readValue(buf,"colour0",&colour0);
 	readValue(buf,"colour1",&colour1);
 	readValue(buf,"colour2",&colour2);
+	readValue(buf,"currentFont",&currentFont);
+	readValue(buf,"position",&position);
 	updateFName();
 }
 
@@ -123,9 +166,55 @@ void bydpConfig::writeValue(BString variable, bool value) {
 	conf.Write(line.String(),line.Length());
 }
 
+void bydpConfig::writeValue(BString variable, BFont font) {
+	BString line;
+	BString val;
+	font_family family;
+	font_style style;
+	float fsize;
+	int size;
+
+	font.GetFamilyAndStyle(&family,&style);
+	line = variable;
+	line += ".family";
+	val = family;
+	writeValue(line,val);
+	line = variable;
+	line += ".style";
+	val = style;
+	writeValue(line,val);
+	line = variable;
+	line += ".size";
+	fsize = font.Size();
+	size = int(fsize);
+	writeValue(line,size);
+}
+
+void bydpConfig::writeValue(BString variable, BRect value) {
+	BString line;
+	int pos;
+	line = variable;
+	line += ".top";
+	pos = int(value.top);
+	writeValue(line,pos);
+	line = variable;
+	line += ".bottom";
+	pos = int(value.bottom);
+	writeValue(line,pos);
+	line = variable;
+	line += ".left";
+	pos = int(value.left);
+	writeValue(line,pos);
+	line = variable;
+	line += ".right";
+	pos = int(value.right);
+	writeValue(line,pos);
+}
+
 void bydpConfig::save(void) {
 	if (conf.SetTo(CONFIG_NAME,B_WRITE_ONLY|B_CREATE_FILE|B_ERASE_FILE) != B_OK) {
-		printf("error opening config file for save\n");
+		BAlert *alert = new BAlert(APP_NAME, tr("Error writing configuration file."), tr("OK"), NULL, NULL, B_WIDTH_AS_USUAL, B_STOP_ALERT);
+		alert->Go();
 		return;
 	}
 	writeValue("topPath",topPath);
@@ -134,23 +223,25 @@ void bydpConfig::save(void) {
 	writeValue("setFocusOnSelf",setFocusOnSelf);
 	writeValue("distance",distance);
 	writeValue("searchmode",searchmode);
-	writeValue("todisplay",todisplay);
 	writeValue("colour",colour);
 	writeValue("colour0",colour0);
 	writeValue("colour1",colour1);
 	writeValue("colour2",colour2);
+	writeValue("currentFont",currentFont);
+	writeValue("position",position);
 	conf.Unset();
-	updateFName();	// don't remove this - needs to be up-to-date for langswitch
+	updateFName();	// don't remove this - fname needs to be up-to-date for langswitch
 }
 
 void bydpConfig::setDefaultConfiguration(void) {
-	topPath = "/boot/home/Desktop/";
+	BPath path("./");
+	topPath = path.Path();
 	toPolish = true;
 	clipboardTracking = true;
 	setFocusOnSelf = true;
 	searchmode = SEARCH_BEGINS;
 	distance = 3;
-	todisplay = 23;
+	currentFont = be_plain_font;
 
 	colour.red = colour.green = colour.blue = 0;
 	colour0.red = colour0.green = 0;
@@ -159,6 +250,9 @@ void bydpConfig::setDefaultConfiguration(void) {
 	colour1.green = colour1.blue = 0;
 	colour2.green = 255;
 	colour2.red = colour2.blue = 0;
+
+	position.left = 64; position.top = 64;
+	position.right = 585; position.bottom = 480;
 
 	updateFName();
 }
