@@ -23,7 +23,6 @@
 			ydpDictionary(BTextView *output, BListView *dict, bydpConfig *config);
 			~ydpDictionary();
 
-			void ReGetDefinition(int index);
 			void GetDefinition(int index);
 			int OpenDictionary(const char *index, const char *data);
 			int OpenDictionary(void);
@@ -39,7 +38,6 @@
 			void UpdateAttr(int oldattr, int newattr);
 			char *ParseToken(char *def);
 			void ClearWordList(void);
-//			void FullFillList(void);
 			int ScoreWord(const char *w1, const char *w2);
 			int BeginsFindWord(const char *word);
 			int FuzzyFindWord(const char *word);
