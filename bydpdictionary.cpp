@@ -48,12 +48,12 @@ int ydpDictionary::OpenDictionary(const char *index, const char *data) {
 	int i;
 
 	if ((fIndex.SetTo(index, B_READ_ONLY)) != B_OK) {
-		printf ("error opening index\n");	/// XXX bledy!
-		return 1;
+		printf ("error opening index\n");
+		return -1;
 	}
 	if ((fData.SetTo(data, B_READ_ONLY)) != B_OK) {
-		printf ("error opening data\n");	/// XXX bledy!
-		return 1;
+		printf ("error opening data\n");
+		return -1;
 	}
 
 	i = 0;

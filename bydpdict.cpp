@@ -22,3 +22,7 @@ BYdpApp::~BYdpApp() {
 void BYdpApp::ReadyToRun() {
 	// sth etc. just before running Run()
 }
+
+//void BYdpApp::MessageReceived(BMessage *message) {
+//	myMainWindow->MessageReceived(message);
+//}

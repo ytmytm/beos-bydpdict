@@ -2,7 +2,6 @@
 // TODO:
 // - menu:
 //		- config
-//			- sciezka
 //			- kolory (4)
 //			- search method
 //				- plain: ile do pokazania
@@ -15,11 +14,15 @@
 //	- todisplay obliczane jakos samodzielnie?
 //	- po wyszukiwaniu pierwszy klik na liste nie dziala
 //		- przychodzi msg o zmianie inputa!
+//	- potrzeba czegos do zablokowania aplikacji, dopoki nie przyjdzie
+//	  wynik z ConfigPath i Refs! (semafor? lock?)
 
 #include "bydpmainwindow.h"
 #include <ScrollView.h>
 #include <Menu.h>
 #include <MenuBar.h>
+#include <FilePanel.h>
+#include <Path.h>
 #include <stdio.h>
 
 const uint32 MSG_MODIFIED_INPUT =	'MInp';	// wpisanie litery
@@ -32,6 +35,11 @@ const uint32 MENU_POL2ENG =			'MP2E';
 const uint32 MENU_SETTINGS =		'MSet';
 const uint32 MENU_FUZZY =			'MFuz';
 const uint32 MENU_PLAIN =			'MPla';
+const uint32 MENU_PATH =			'MPat';
+const uint32 MENU_COLOR0 =			'MCo0';
+const uint32 MENU_COLOR1 =			'MCo1';
+const uint32 MENU_COLOR2 =			'MCo2';
+const uint32 MENU_COLOR3 =			'MCo3';
 
 BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	BRect(64, 64, 600, 480), windowTitle, B_TITLED_WINDOW, 0 ) {
@@ -75,9 +83,12 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	menu->AddItem(new BMenuItem("Zakończ", new BMessage(B_QUIT_REQUESTED), 'Z'));
 	menubar->AddItem(menu);
 
-	menu = new BMenu("Ustawienia");
-	menu->AddItem(new BMenuItem("Konfiguracja", new BMessage(MENU_SETTINGS), 'K'));
-	menu->AddSeparatorItem();
+//	BMenu *konfig;
+//	menu = new BMenu("Ustawienia");
+//	menu->AddItem(new BMenuItem("Konfiguracja", new BMessage(MENU_SETTINGS), 'K'));
+//	menu->AddItem(konfig = new BMenu("Konfiguracja");
+//	menu->AddSeparatorItem();
+	menu = new BMenu("Język");
 	menu->AddItem(new BMenuItem("Przełącz język", new BMessage(MENU_SWITCH), 'J'));
 	menu->AddItem(menuEng = new BMenuItem("Eng -> Pol", new BMessage(MENU_ENG2POL), 'E'));
 	menu->AddItem(menuPol = new BMenuItem("Pol -> Eng", new BMessage(MENU_POL2ENG), 'P'));
@@ -88,10 +99,19 @@ BYdpMainWindow::BYdpMainWindow(const char *windowTitle) : BWindow(
 	menu->AddItem(menuFuzzy = new BMenuItem("Rozmyte", new BMessage(MENU_FUZZY), 'R'));
 	menubar->AddItem(menu);
 
+	menu = new BMenu("Ustawienia");
+	menu->AddItem(new BMenuItem("Ścieżka do słownika", new BMessage(MENU_PATH), 'S'));
+	menu->AddSeparatorItem();
+	menu->AddItem(new BMenuItem("Kolor0", new BMessage(MENU_COLOR0)));
+	menu->AddItem(new BMenuItem("Kolor1", new BMessage(MENU_COLOR1)));
+	menu->AddItem(new BMenuItem("Kolor2", new BMessage(MENU_COLOR2)));
+	menu->AddItem(new BMenuItem("Kolor3", new BMessage(MENU_COLOR3)));
+	menubar->AddItem(menu);
+
 	config = new bydpConfig();
 	myDict = new ydpDictionary(outputView, dictList, config);
 	printf("about to open dictionary\n");
-	myDict->OpenDictionary();	// XXX test for error?
+	myDict->OpenDictionary();	/// XXX prob! will not block on ConfigPath
 	UpdateMenus();
 	wordInput->SetText("A");
 	wordInput->MakeFocus(true);
@@ -136,6 +156,37 @@ void BYdpMainWindow::ConfigUpdate(void) {
 	printf("update config\n");
 }
 
+void BYdpMainWindow::ConfigColour(int number) {
+	printf("configure colour %i\n", number);
+}
+
+void BYdpMainWindow::ConfigPath(void) {
+	printf("configure path\n");
+	BMessenger mesg(this);
+	BFilePanel *myPanel = new BFilePanel(B_OPEN_PANEL,
+			&mesg, NULL, B_DIRECTORY_NODE, false, NULL, NULL, true, true);
+	myPanel->Show();
+	myPanel->Window()->SetTitle("Podaj katalog z plikami słownika");
+}
+
+void BYdpMainWindow::RefsReceived(BMessage *Message) {
+	int ref_num;
+	entry_ref ref;
+	status_t err;
+	ref_num = 0;
+	do {
+		if ((err = Message->FindRef("refs", ref_num, &ref)) != B_OK)
+			return;
+		BPath path;
+		BEntry myEntry(&ref);
+		myEntry.GetPath(&path);
+		printf("got new path %s\n", path.Path());
+		config->topPath = path.Path();
+		config->save();
+		ref_num++;
+	} while (1);
+}
+
 void BYdpMainWindow::MessageReceived(BMessage *Message) {
 	int item;
 	this->DisableUpdates();
@@ -154,10 +205,10 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			if (item>=0)
 				myDict->GetDefinition(myDict->wordPairs[item]);
 			break;
-		case MENU_SETTINGS:
-			printf("menu settings\n");
-			ConfigDialog();
-			break;
+//		case MENU_SETTINGS:
+//			printf("menu settings\n");
+//			ConfigDialog();
+//			break;
 		case MENU_ENG2POL:
 			printf("eng2pol\n");
 			UpdateLanguages(true);
@@ -181,6 +232,24 @@ void BYdpMainWindow::MessageReceived(BMessage *Message) {
 			config->save();
 			HandleModifiedInput(true);
 			UpdateMenus();
+			break;
+		case MENU_PATH:
+			ConfigPath();
+			break;
+		case MENU_COLOR0:
+			ConfigColour(0);
+			break;
+		case MENU_COLOR1:
+			ConfigColour(1);
+			break;
+		case MENU_COLOR2:
+			ConfigColour(2);
+			break;
+		case MENU_COLOR3:
+			ConfigColour(3);
+			break;
+		case B_REFS_RECEIVED:
+			RefsReceived(Message);	/// XXX why manuall??
 			break;
 		default:
 			BWindow::MessageReceived(Message);
